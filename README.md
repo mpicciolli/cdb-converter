@@ -41,16 +41,19 @@ console.log(result[0].values);
 
 // Export to SQLite file
 const sqliteData = db.export();
-fs.writeFileSync("game.db", sqliteData);
+fs.writeFileSync("save.db", sqliteData);
 ```
 
 ### Convert SQLite back to CDB
 
 ```typescript
+import initSqlJs from "sql.js";
 import { sqlToCdb } from "cdb-converter";
 
+const SQL = await initSqlJs();
+
 // Load SQLite database
-const sqliteBuffer = fs.readFileSync("game.db");
+const sqliteBuffer = fs.readFileSync("save.db");
 const db = new SQL.Database(sqliteBuffer);
 
 // Convert back to CDB
