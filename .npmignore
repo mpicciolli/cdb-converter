@@ -1,0 +1,6 @@
+src/
+test/
+*.test.ts
+tsup.config.ts
+.npmignore
+.gitignore

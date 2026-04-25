@@ -1,0 +1,64 @@
+{
+  "name": "cdb-converter",
+  "version": "0.1.0",
+  "description": "Convert Pro Cycling Manager CDB files to/from SQLite and other formats. TypeScript library with zero configuration.",
+  "license": "MIT",
+  "author": "mpicciolli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mpicciolli/cdb-converter"
+  },
+  "keywords": [
+    "cdb",
+    "database",
+    "converter",
+    "sqlite",
+    "binary",
+    "typescript"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "format": "biome format --write ./src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "pako": "^2.1.0",
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.13",
+    "@types/node": "^22.0.0",
+    "@types/pako": "^2.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "biome format --write"
+    ]
+  }
+}
