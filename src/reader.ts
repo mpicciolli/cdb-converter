@@ -10,7 +10,7 @@ import type {
 	DataType,
 	ColumnInfo,
 } from "./types";
-import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
+import { CHUNK_TYPE, DATA_TYPE, MAGIC } from "./tableMetadata";
 
 type ColumnDefinition = Omit<ColumnInfo, "data"> & {
 	data?: ColumnData;
@@ -85,8 +85,18 @@ export class CDBReader {
 		this.pos += padding;
 	}
 
+	private readMagic(expected: number, label: string): void {
+		const actual = this.read32();
+
+		if (actual !== expected) {
+			throw new Error(
+				`Invalid ${label} magic: expected 0x${expected.toString(16)}, got 0x${actual.toString(16)}`,
+			);
+		}
+	}
+
 	private readChunkHeader(): ChunkHeader {
-		this.read32(); // CHUNK_BEGIN magic
+		this.readMagic(MAGIC.CHUNK_BEGIN, "CHUNK_BEGIN");
 		const chunkSize = this.read32();
 		const chunkType = this.read32();
 		const flags = this.read32();
@@ -101,7 +111,7 @@ export class CDBReader {
 		}
 
 		this.readPadding();
-		this.read32(); // CHUNK_SEPARATOR magic
+		this.readMagic(MAGIC.CHUNK_SEPARATOR, "CHUNK_SEPARATOR");
 
 		return { chunkSize, chunkType, flags, description };
 	}
@@ -309,11 +319,12 @@ export class CDBReader {
 
 			case DATA_TYPE.INTEGER_SHORT: {
 				const bytes = new Uint8Array(new Uint32Array(rawData).buffer);
-				const uint16Values: number[] = [];
+				const int16Values: number[] = [];
 				for (let i = 0; i < rowCount; i++) {
-					uint16Values.push(bytes[i * 2] | (bytes[i * 2 + 1] << 8));
+					const value = bytes[i * 2] | (bytes[i * 2 + 1] << 8);
+					int16Values.push(value > 32767 ? value - 65536 : value);
 				}
-				return uint16Values;
+				return int16Values;
 			}
 
 			case DATA_TYPE.FLOAT: {

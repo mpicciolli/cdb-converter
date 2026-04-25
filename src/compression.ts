@@ -29,15 +29,40 @@ export function decompressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer {
 		return bytes.slice().buffer;
 	}
 
-	// Data is compressed
-	const compressedSize = view.getUint32(8, true);
-	const compressedData = bytes.subarray(12, 12 + compressedSize);
+	if (bytes.byteLength < 12) {
+		throw new Error("Malformed compressed CDB: incomplete compression header");
+	}
 
-	const decompressed = pako.inflate(compressedData);
-	return decompressed.buffer.slice(
-		decompressed.byteOffset,
-		decompressed.byteOffset + decompressed.byteLength,
-	);
+	// Data is compressed
+	const uncompressedSize = view.getUint32(4, true);
+	const compressedSize = view.getUint32(8, true);
+	const compressedEnd = 12 + compressedSize;
+
+	if (compressedEnd > bytes.byteLength) {
+		throw new Error(
+			"Malformed compressed CDB: compressed payload exceeds input length",
+		);
+	}
+
+	const compressedData = bytes.subarray(12, compressedEnd);
+
+	let decompressed: Uint8Array;
+
+	try {
+		decompressed = pako.inflate(compressedData);
+	} catch {
+		throw new Error("Malformed compressed CDB: invalid compressed payload");
+	}
+
+	if (decompressed.byteLength !== uncompressedSize) {
+		throw new Error(
+			"Malformed compressed CDB: uncompressed size does not match header",
+		);
+	}
+
+	const result = new Uint8Array(decompressed.byteLength);
+	result.set(decompressed);
+	return result.buffer;
 }
 
 /**

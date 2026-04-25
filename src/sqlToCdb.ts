@@ -28,6 +28,27 @@ function toDataType(value: number): DataType {
 	}
 }
 
+function parseColumnMetadata(colName: string, colType: string): ColumnMetadata {
+	const trimmedType = colType.trim();
+	const match = trimmedType.match(/^(\S+)\s+(\d+)$/);
+	if (!match) {
+		throw new Error(
+			`Invalid encoded column type for "${colName}": expected "<sqlite type> <encoded number>", got "${colType}"`,
+		);
+	}
+
+	const sqliteType = match[1];
+	const encodedValue = Number.parseInt(match[2], 10);
+	const dataType = encodedValue & 0xf;
+	const columnIndex = Math.floor(encodedValue / 16) & 0xff;
+
+	return {
+		sqliteType,
+		cdbDataType: toDataType(dataType),
+		cdbColumnIndex: columnIndex,
+	};
+}
+
 /**
  * Convert SQLite database back to CDB binary format
  * @param db - sql.js Database instance (must have DB_STRUCTURE table)
@@ -69,19 +90,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			const colName = row[1] as string;
 			const colType = row[2] as string;
 
-			// Extract encoded value from column type (e.g., 'INTEGER 12345')
-			const match = colType.match(/\s+(\d+)/);
-			const encodedValue = parseInt(match?.[1] || "0", 10);
-
-			// Formula: (table_id * 256 + column_index) * 16 + dataType
-			const dataType = encodedValue & 0xf;
-			const columnIndex = Math.floor(encodedValue / 16) & 0xff;
-
-			columnInfo[colName] = {
-				sqliteType: colType.split(" ")[0],
-				cdbDataType: toDataType(dataType),
-				cdbColumnIndex: columnIndex,
-			};
+			columnInfo[colName] = parseColumnMetadata(colName, colType);
 		});
 
 		const dataResult = db.exec(`SELECT * FROM "${tableInfo.name}"`);

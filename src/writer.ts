@@ -101,6 +101,12 @@ export class CDBWriter {
 	}
 
 	getData(): Uint8Array {
+		if (this.chunkStack.length > 0) {
+			throw new Error(
+				`Cannot get CDB data with ${this.chunkStack.length} open chunk${this.chunkStack.length === 1 ? "" : "s"}`,
+			);
+		}
+
 		for (const chunk of this.closedChunks) {
 			if (chunk.size !== undefined) {
 				this.view.setUint32(chunk.startPos + 4, chunk.size, true);

@@ -35,7 +35,9 @@ export function cdbToSql(
 		(wrapperChildren[CHUNK_TYPE.DATABASE_TABLES] as TableInfo[] | undefined) ??
 		[];
 
-	// DB_STRUCTURE uses special encoding: table_id=1, columns indexed from 1
+	// DB_STRUCTURE mirrors the PCM convention used by sqlToCdb: TableName keeps the
+	// literal type annotation '274' so the schema matches the metadata table shape
+	// expected by round-trip consumers, while only the table rows are read back.
 	db.run(`CREATE TABLE DB_STRUCTURE (TableName TEXT '274', ID INTEGER)`);
 
 	// Store TABLE_FLAGS in memory (attached to db object, not in SQLite)
@@ -43,9 +45,6 @@ export function cdbToSql(
 	db._tableFlagsMap = tableFlagsMap;
 
 	tables.forEach((table) => {
-		if (table.tableId === null) {
-			throw new Error(`Table '${table.name}' has null tableId`);
-		}
 		db.run(`INSERT INTO DB_STRUCTURE VALUES (?, ?)`, [
 			table.name,
 			table.tableId,
