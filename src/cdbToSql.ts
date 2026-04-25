@@ -4,8 +4,8 @@
 
 import { decompressCdb } from "./compression";
 import { CDBReader } from "./reader";
-import { CHUNK_TYPE, DATA_TYPE, TABLE_FLAGS_BY_ID } from "./tableMetadata";
-import { type SqlDatabase, type SqlJsStatic } from "./types";
+import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
+import type { SqlDatabase, SqlJsStatic, TableInfo } from "./types";
 
 /**
  * Convert CDB binary data to SQLite database instance
@@ -22,16 +22,23 @@ export function cdbToSql(
 	const db = new SQL.Database();
 
 	const wrapperChunk = reader.readChunk();
+	const wrapperChildren = wrapperChunk.children;
+	if (!wrapperChildren) {
+		throw new Error("Missing wrapper chunk children");
+	}
+
 	const tables =
-		(wrapperChunk.children![CHUNK_TYPE.DATABASE_TABLES] as any[]) || [];
+		(wrapperChildren[CHUNK_TYPE.DATABASE_TABLES] as TableInfo[] | undefined) ??
+		[];
 
 	// DB_STRUCTURE uses special encoding: table_id=1, columns indexed from 1
 	db.run(`CREATE TABLE DB_STRUCTURE (TableName TEXT '274', ID INTEGER)`);
 
 	// Store TABLE_FLAGS in memory (attached to db object, not in SQLite)
-	db._tableFlagsMap = new Map();
+	const tableFlagsMap = new Map<number, number>();
+	db._tableFlagsMap = tableFlagsMap;
 
-	tables.forEach((table: any) => {
+	tables.forEach((table) => {
 		if (table.tableId === null) {
 			throw new Error(`Table '${table.name}' has null tableId`);
 		}
@@ -39,11 +46,11 @@ export function cdbToSql(
 			table.name,
 			table.tableId,
 		]);
-		db._tableFlagsMap!.set(table.tableId, table.tableFlags);
+		tableFlagsMap.set(table.tableId, table.tableFlags);
 
 		// Keep columns in original file order (do NOT sort)
 		const columnDefs = table.columns
-			.map((col: any) => {
+			.map((col) => {
 				let baseType: string;
 				switch (col.type) {
 					case DATA_TYPE.FLOAT:
@@ -85,7 +92,9 @@ export function cdbToSql(
 				const params: unknown[] = [];
 
 				for (let rowIdx = i; rowIdx < end; rowIdx++) {
-					table.columns.forEach((col: any) => params.push(col.data[rowIdx]));
+					for (const col of table.columns) {
+						params.push(col.data[rowIdx]);
+					}
 				}
 
 				db.run(`INSERT INTO "${table.name}" VALUES ${valueSets}`, params);

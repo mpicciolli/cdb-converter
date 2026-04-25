@@ -3,20 +3,23 @@
  * Handles parsing of chunk hierarchy, data types, and value unpacking
  */
 
-import {
+import type {
 	ChunkHeader,
 	CDBChunk,
 	ColumnData,
 	DataType,
-	type ColumnInfo,
-	type TableInfo,
+	ColumnInfo,
 } from "./types";
-import { CHUNK_TYPE, DATA_TYPE, MAGIC } from "./tableMetadata";
+import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
+
+type ColumnDefinition = Omit<ColumnInfo, "data"> & {
+	data?: ColumnData;
+	columnChunk?: CDBChunk;
+};
 
 export class CDBReader {
 	private data: DataView;
 	private pos: number;
-	private chunkStack: unknown[];
 
 	constructor(arrayBuffer: ArrayBuffer | Buffer | Uint8Array) {
 		let buffer: ArrayBufferLike;
@@ -39,7 +42,33 @@ export class CDBReader {
 
 		this.data = new DataView(buffer as ArrayBuffer, offset, length);
 		this.pos = 0;
-		this.chunkStack = [];
+	}
+
+	private getChunkChildren(chunk: CDBChunk): Record<number, unknown> {
+		if (!chunk.children) {
+			throw new Error(`Chunk ${chunk.type} is missing children`);
+		}
+
+		return chunk.children;
+	}
+
+	private getChunkHeader(chunk: CDBChunk): ChunkHeader {
+		if (!chunk.header) {
+			throw new Error(`Chunk ${chunk.type} is missing a header`);
+		}
+
+		return chunk.header;
+	}
+
+	private getRequiredChild<T>(chunk: CDBChunk, childType: number): T {
+		const children = this.getChunkChildren(chunk);
+		const value = children[childType];
+
+		if (value === undefined) {
+			throw new Error(`Chunk ${chunk.type} is missing child ${childType}`);
+		}
+
+		return value as T;
 	}
 
 	private read32(): number {
@@ -133,26 +162,33 @@ export class CDBReader {
 					const tables = this.readArray(() => {
 						const tableChunk = this.readChunk();
 						const rowCount =
-							(tableChunk.children![CHUNK_TYPE.ROW_COUNT] as number) || 0;
-						const columns = tableChunk.children![
-							CHUNK_TYPE.COLUMN_DEFINITIONS
-						] as ColumnInfo[];
-
-						columns.forEach((col: any) => {
-							if (col.columnChunk) {
-								col.data = this.convertColumnData(col.columnChunk, rowCount);
-								delete col.columnChunk;
-							}
-						});
+							this.getRequiredChild<number>(tableChunk, CHUNK_TYPE.ROW_COUNT) ||
+							0;
+						const columnDefinitions = this.getRequiredChild<ColumnDefinition[]>(
+							tableChunk,
+							CHUNK_TYPE.COLUMN_DEFINITIONS,
+						);
+						const columns: ColumnInfo[] = columnDefinitions.map((column) => ({
+							name: column.name,
+							type: column.type,
+							columnIndex: column.columnIndex,
+							data: column.columnChunk
+								? this.convertColumnData(column.columnChunk, rowCount)
+								: (column.data ?? []),
+						}));
 
 						return {
-							name: tableChunk.header!.description,
+							name: this.getChunkHeader(tableChunk).description,
 							rowCount,
 							columns,
-							tableId: tableChunk.children![CHUNK_TYPE.TABLE_ID] as number,
-							tableFlags: tableChunk.children![
-								CHUNK_TYPE.TABLE_FLAGS
-							] as number,
+							tableId: this.getRequiredChild<number>(
+								tableChunk,
+								CHUNK_TYPE.TABLE_ID,
+							),
+							tableFlags: this.getRequiredChild<number>(
+								tableChunk,
+								CHUNK_TYPE.TABLE_FLAGS,
+							),
 						};
 					});
 					result = { type: header.chunkType, value: tables };
@@ -163,16 +199,18 @@ export class CDBReader {
 				{
 					const columns = this.readArray(() => {
 						const columnChunk = this.readChunk();
-						const colName = columnChunk.header!.description;
+						const colName = this.getChunkHeader(columnChunk).description;
 
 						return {
 							name: colName,
-							type: columnChunk.children![
-								CHUNK_TYPE.COLUMN_DATA_TYPE
-							] as DataType,
-							columnIndex: columnChunk.children![
-								CHUNK_TYPE.COLUMN_INDEX
-							] as number,
+							type: this.getRequiredChild<DataType>(
+								columnChunk,
+								CHUNK_TYPE.COLUMN_DATA_TYPE,
+							),
+							columnIndex: this.getRequiredChild<number>(
+								columnChunk,
+								CHUNK_TYPE.COLUMN_INDEX,
+							),
 							columnChunk: columnChunk, // Store for later conversion
 						};
 					});
@@ -228,15 +266,16 @@ export class CDBReader {
 		columnChunk: CDBChunk,
 		rowCount: number,
 	): ColumnData {
-		const dataType = columnChunk.children![
-			CHUNK_TYPE.COLUMN_DATA_TYPE
-		] as DataType;
+		const dataType = this.getRequiredChild<DataType>(
+			columnChunk,
+			CHUNK_TYPE.COLUMN_DATA_TYPE,
+		);
 		const rawData =
-			(columnChunk.children![CHUNK_TYPE.COLUMN_VALUES] as
+			(this.getChunkChildren(columnChunk)[CHUNK_TYPE.COLUMN_VALUES] as
 				| number[]
 				| undefined) ?? [];
 		const sizedData =
-			(columnChunk.children![CHUNK_TYPE.COLUMN_BLOB_DATA] as
+			(this.getChunkChildren(columnChunk)[CHUNK_TYPE.COLUMN_BLOB_DATA] as
 				| Uint8Array
 				| undefined) ?? new Uint8Array([0, 0, 0, 0]);
 
@@ -363,7 +402,7 @@ export class CDBReader {
 				currentOffset += 4;
 				return value;
 			});
-			return "(" + values.join(",") + ")";
+			return `(${values.join(",")})`;
 		});
 	}
 }

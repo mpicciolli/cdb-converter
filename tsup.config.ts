@@ -1,19 +1,15 @@
-import { defineConfig } from 'tsup'
-
-const outExtension = ({ format }: { format: 'cjs' | 'esm' }) => ({
-  js: format === 'esm' ? '.mjs' : '.cjs',
-})
+import { defineConfig } from "tsup";
 
 export default defineConfig([
-  {
-    entry: {
-      index: 'src/index.ts',
-    },
-    format: ['esm', 'cjs'],
-    dts: true,
-    shims: true,
-    clean: true,
-    sourcemap: false,
-    minify: false,
-  },
-])
+	{
+		entry: {
+			index: "src/index.ts",
+		},
+		format: ["esm", "cjs"],
+		dts: true,
+		shims: true,
+		clean: true,
+		sourcemap: false,
+		minify: false,
+	},
+]);

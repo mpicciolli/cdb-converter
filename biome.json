@@ -1,15 +1,15 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
-  "formatter": {
-    "enabled": true
-  },
-  "linter": {
-    "enabled": true
-  },
-  "assist": {
-    "enabled": false
-  },
-  "files": {
-    "includes": ["**", "!dist"]
-  }
+	"$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
+	"formatter": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true
+	},
+	"assist": {
+		"enabled": false
+	},
+	"files": {
+		"includes": ["**", "!dist"]
+	}
 }

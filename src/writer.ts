@@ -3,7 +3,7 @@
  * Handles writing of chunk hierarchy and data type encoding
  */
 
-import { ChunkType, DataType } from "./types";
+import type { ChunkType, DataType } from "./types";
 import { CHUNK_TYPE, DATA_TYPE, MAGIC } from "./tableMetadata";
 
 interface ChunkInfo {
@@ -119,7 +119,9 @@ export class CDBWriter {
 
 		switch (dataType) {
 			case DATA_TYPE.INTEGER:
-				(values as number[]).forEach((value) => this.write32(value));
+				for (const value of values as number[]) {
+					this.write32(value);
+				}
 				break;
 
 			case DATA_TYPE.BOOLEAN:
@@ -192,7 +194,9 @@ export class CDBWriter {
 			lengths.push(encoded.length + 1);
 		});
 
-		lengths.forEach((len) => this.write32(len));
+		for (const len of lengths) {
+			this.write32(len);
+		}
 
 		if (stringData.length > 0) {
 			this.writeChunkClose();
@@ -228,13 +232,17 @@ export class CDBWriter {
 			});
 		});
 
-		counts.forEach((count) => this.write32(count));
+		for (const count of counts) {
+			this.write32(count);
+		}
 
 		if (listData.length > 0) {
 			this.writeChunkClose();
 			this.writeChunkOpen(CHUNK_TYPE.COLUMN_BLOB_DATA);
 			this.write32(listData.length * 4);
-			listData.forEach((value) => this.write32(value));
+			for (const value of listData) {
+				this.write32(value);
+			}
 		}
 	}
 }

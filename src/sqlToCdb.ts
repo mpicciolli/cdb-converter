@@ -10,7 +10,23 @@ import {
 	MAGIC,
 	TABLE_FLAGS_BY_ID,
 } from "./tableMetadata";
-import { type ColumnMetadata, type SqlDatabase } from "./types";
+import type { ColumnMetadata, DataType, SqlDatabase } from "./types";
+
+function toDataType(value: number): DataType {
+	switch (value) {
+		case DATA_TYPE.INTEGER:
+		case DATA_TYPE.FLOAT:
+		case DATA_TYPE.STRING:
+		case DATA_TYPE.BOOLEAN:
+		case DATA_TYPE.INTEGER_BYTE:
+		case DATA_TYPE.INTEGER_SHORT:
+		case DATA_TYPE.FLOAT_LIST:
+		case DATA_TYPE.INTEGER_LIST:
+			return value;
+		default:
+			throw new Error(`Unsupported CDB data type: ${value}`);
+	}
+}
 
 /**
  * Convert SQLite database back to CDB binary format
@@ -63,7 +79,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 
 			columnInfo[colName] = {
 				sqliteType: colType.split(" ")[0],
-				cdbDataType: dataType as any,
+				cdbDataType: toDataType(dataType),
 				cdbColumnIndex: columnIndex,
 			};
 		});
@@ -113,7 +129,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			writer.write32(info.cdbDataType);
 			writer.writeChunkClose();
 
-			writer.writeColumnData(info.cdbDataType as any, columnData[colIdx]);
+			writer.writeColumnData(info.cdbDataType, columnData[colIdx]);
 
 			writer.writeChunkClose();
 		});
