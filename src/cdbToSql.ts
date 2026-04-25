@@ -14,7 +14,7 @@ import type { SqlDatabase, SqlJsStatic, TableInfo } from "./types";
  * @returns SQLite database with CDB tables loaded
  */
 export function cdbToSql(
-	cdbData: ArrayBuffer | Buffer,
+	cdbData: ArrayBuffer | Uint8Array,
 	SQL: SqlJsStatic,
 ): SqlDatabase {
 	const decompressedData = decompressCdb(cdbData);

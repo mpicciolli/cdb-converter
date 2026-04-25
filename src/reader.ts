@@ -21,26 +21,13 @@ export class CDBReader {
 	private data: DataView;
 	private pos: number;
 
-	constructor(arrayBuffer: ArrayBuffer | Buffer | Uint8Array) {
-		let buffer: ArrayBufferLike;
-		let offset = 0;
-		let length: number;
+	constructor(arrayBuffer: ArrayBuffer | Uint8Array) {
+		const bytes =
+			arrayBuffer instanceof Uint8Array
+				? arrayBuffer
+				: new Uint8Array(arrayBuffer);
 
-		if (arrayBuffer instanceof Buffer) {
-			buffer = arrayBuffer.buffer;
-			offset = arrayBuffer.byteOffset;
-			length = arrayBuffer.byteLength;
-		} else if (arrayBuffer instanceof Uint8Array) {
-			buffer = arrayBuffer.buffer;
-			offset = arrayBuffer.byteOffset;
-			length = arrayBuffer.byteLength;
-		} else {
-			buffer = arrayBuffer;
-			offset = 0;
-			length = buffer.byteLength;
-		}
-
-		this.data = new DataView(buffer as ArrayBuffer, offset, length);
+		this.data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 		this.pos = 0;
 	}
 

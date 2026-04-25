@@ -30,7 +30,7 @@ import initSqlJs from "sql.js";
 const SQL = await initSqlJs();
 
 // Read CDB file
-const cdbBuffer = fs.readFileSync("game.cdb");
+const cdbBuffer = fs.readFileSync("save.cdb");
 
 // Convert to SQLite
 const db = cdbToSql(cdbBuffer, SQL);
@@ -57,7 +57,7 @@ const db = new SQL.Database(sqliteBuffer);
 const cdbBuffer = sqlToCdb(db);
 
 // Save as CDB
-fs.writeFileSync("game.cdb", cdbBuffer);
+fs.writeFileSync("save.cdb", cdbBuffer);
 ```
 
 ### Compression
@@ -88,9 +88,11 @@ The library preserves all CDB data types during conversion:
 
 ## API Reference
 
-### `cdbToSql(cdbBuffer: ArrayBuffer | Buffer, SQL: SqlJsStatic): Database`
+### `cdbToSql(cdbBuffer: ArrayBuffer | Uint8Array, SQL: SqlJsStatic): Database`
 
 Convert CDB binary data to SQLite database instance.
+
+You must pass the initialized `sql.js` module returned by `initSqlJs()`. This library does not initialize `sql.js` internally because that setup is asynchronous and environment-specific: the caller controls how the wasm file is loaded in Node.js or in the browser, and `cdbToSql` only needs the ready-to-use `Database` constructor exposed by that module.
 
 - **cdbBuffer**: Raw CDB binary data (compressed or uncompressed)
 - **SQL**: sql.js instance from `initSqlJs()`
@@ -103,11 +105,11 @@ Convert SQLite database back to CDB binary format (automatically compressed).
 - **db**: sql.js Database instance
 - **returns**: Compressed CDB binary data (ArrayBuffer)
 
-### `compressCdb(data: ArrayBuffer | Buffer): ArrayBuffer`
+### `compressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer`
 
 Compress CDB data using zlib deflate.
 
-### `decompressCdb(data: ArrayBuffer | Buffer): ArrayBuffer`
+### `decompressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer`
 
 Decompress CDB data (handles both compressed and uncompressed input).
 

@@ -46,11 +46,10 @@ export class CDBWriter {
 		this.pos += 4;
 	}
 
-	writeBytes(bytes: Uint8Array | Buffer): void {
-		const data = bytes instanceof Buffer ? new Uint8Array(bytes) : bytes;
-		this.ensureCapacity(data.length);
-		this.buffer.set(data, this.pos);
-		this.pos += data.length;
+	writeBytes(bytes: Uint8Array): void {
+		this.ensureCapacity(bytes.length);
+		this.buffer.set(bytes, this.pos);
+		this.pos += bytes.length;
 	}
 
 	private writePadding(): void {

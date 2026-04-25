@@ -5,14 +5,8 @@
 import pako from "pako";
 import { MAGIC } from "./tableMetadata";
 
-function toUint8Array(data: ArrayBuffer | Buffer | Uint8Array): Uint8Array {
-	if (data instanceof Buffer) {
-		return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-	}
-	if (data instanceof Uint8Array) {
-		return data;
-	}
-	return new Uint8Array(data);
+function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
+	return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
 /**
@@ -21,9 +15,7 @@ function toUint8Array(data: ArrayBuffer | Buffer | Uint8Array): Uint8Array {
  * @param data - Raw CDB data (may be compressed or uncompressed)
  * @returns Decompressed data as ArrayBuffer
  */
-export function decompressCdb(
-	data: ArrayBuffer | Buffer | Uint8Array,
-): ArrayBuffer {
+export function decompressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer {
 	const bytes = toUint8Array(data);
 
 	if (bytes.byteLength < 4) {
@@ -54,9 +46,7 @@ export function decompressCdb(
  * @param data - Uncompressed CDB data
  * @returns Compressed data with zlib header (ArrayBuffer)
  */
-export function compressCdb(
-	data: ArrayBuffer | Buffer | Uint8Array,
-): ArrayBuffer {
+export function compressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer {
 	const uncompressedData = toUint8Array(data);
 	const compressed = pako.deflate(uncompressedData);
 
