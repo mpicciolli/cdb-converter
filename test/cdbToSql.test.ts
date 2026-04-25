@@ -14,8 +14,6 @@ const mockReadChunk = vi.fn();
 
 vi.mock("../src/reader", () => ({
 	CDBReader: class MockCDBReader {
-		constructor(_data: ArrayBuffer | Uint8Array) {}
-
 		readChunk() {
 			return mockReadChunk();
 		}
@@ -28,7 +26,9 @@ type MockSqlDatabase = InstanceType<SqlJsStatic["Database"]> & {
 	sqlOperations: Array<{ sql: string; params?: unknown[] }>;
 };
 
-function createMockSqlJs(): SqlJsStatic & { createdDatabases: MockSqlDatabase[] } {
+function createMockSqlJs(): SqlJsStatic & {
+	createdDatabases: MockSqlDatabase[];
+} {
 	const createdDatabases: MockSqlDatabase[] = [];
 
 	return {
@@ -120,7 +120,7 @@ describe("cdb/sql conversion surface", () => {
 
 		mockReadChunk.mockReturnValueOnce({
 			children: {
-				[0x01]: [
+				1: [
 					{
 						name: "WideTable",
 						tableId: 1,
