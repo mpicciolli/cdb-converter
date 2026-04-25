@@ -9,6 +9,11 @@ export default defineConfig([
 		dts: true,
 		shims: true,
 		clean: true,
+		outExtension({ format }) {
+			return {
+				js: format === "esm" ? ".mjs" : ".cjs",
+			};
+		},
 		sourcemap: false,
 		minify: false,
 	},

@@ -7,6 +7,10 @@ import { CDBReader } from "./reader";
 import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
 import type { SqlDatabase, SqlJsStatic, TableInfo } from "./types";
 
+function escapeSqlIdentifier(identifier: string): string {
+	return identifier.replace(/"/g, '""');
+}
+
 /**
  * Convert CDB binary data to SQLite database instance
  * @param cdbData - Raw CDB binary data (compressed or uncompressed)
@@ -47,10 +51,12 @@ export function cdbToSql(
 			table.tableId,
 		]);
 		tableFlagsMap.set(table.tableId, table.tableFlags);
+		const escapedTableName = escapeSqlIdentifier(table.name);
 
 		// Keep columns in original file order (do NOT sort)
 		const columnDefs = table.columns
 			.map((col) => {
+				const escapedColumnName = escapeSqlIdentifier(col.name);
 				let baseType: string;
 				switch (col.type) {
 					case DATA_TYPE.FLOAT:
@@ -71,16 +77,16 @@ export function cdbToSql(
 
 				const encodedValue =
 					(table.tableId * 256 + col.columnIndex) * 16 + (col.type & 0xf);
-				return `"${col.name}" '${baseType} ${encodedValue}'`;
+				return `"${escapedColumnName}" '${baseType} ${encodedValue}'`;
 			})
 			.join(", ");
 
-		db.run(`CREATE TABLE "${table.name}" (${columnDefs})`);
+		db.run(`CREATE TABLE "${escapedTableName}" (${columnDefs})`);
 
 		// Insert rows in batches (SQLite limit: 999 variables)
 		if (table.rowCount > 0) {
 			const columnsPerRow = table.columns.length;
-			const maxRowsPerBatch = Math.floor(999 / columnsPerRow);
+			const maxRowsPerBatch = Math.max(1, Math.floor(999 / columnsPerRow));
 			const placeholders = table.columns.map(() => "?").join(", ");
 
 			for (let i = 0; i < table.rowCount; i += maxRowsPerBatch) {
@@ -97,7 +103,7 @@ export function cdbToSql(
 					}
 				}
 
-				db.run(`INSERT INTO "${table.name}" VALUES ${valueSets}`, params);
+				db.run(`INSERT INTO "${escapedTableName}" VALUES ${valueSets}`, params);
 			}
 		}
 	});

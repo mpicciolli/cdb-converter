@@ -2,17 +2,44 @@
  * CDB to SQLite conversion tests
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { cdbToSql, sqlToCdb } from "../src/index";
 import type { SqlJsStatic } from "../src/types";
 
+vi.mock("../src/compression", () => ({
+	decompressCdb: vi.fn((data: ArrayBuffer | Uint8Array) => data),
+}));
+
+const mockReadChunk = vi.fn();
+
+vi.mock("../src/reader", () => ({
+	CDBReader: class MockCDBReader {
+		constructor(_data: ArrayBuffer | Uint8Array) {}
+
+		readChunk() {
+			return mockReadChunk();
+		}
+	},
+}));
+
 // Mock SqlJs for testing - would need actual sql.js in real tests
-function createMockSqlJs(): SqlJsStatic {
+
+type MockSqlDatabase = InstanceType<SqlJsStatic["Database"]> & {
+	sqlOperations: Array<{ sql: string; params?: unknown[] }>;
+};
+
+function createMockSqlJs(): SqlJsStatic & { createdDatabases: MockSqlDatabase[] } {
+	const createdDatabases: MockSqlDatabase[] = [];
+
 	return {
 		Database: class MockDatabase {
-			private tables: Map<string, { rows: unknown[][] }> = new Map();
-			private sqlOperations: Array<{ sql: string; params?: unknown[] }> = [];
+			tables: Map<string, { rows: unknown[][] }> = new Map();
+			sqlOperations: Array<{ sql: string; params?: unknown[] }> = [];
 			_tableFlagsMap?: Map<number, number>;
+
+			constructor() {
+				createdDatabases.push(this as MockSqlDatabase);
+			}
 
 			run(sql: string, params?: unknown[]): void {
 				this.sqlOperations.push({ sql, params });
@@ -26,7 +53,7 @@ function createMockSqlJs(): SqlJsStatic {
 					const match = sql.match(/INSERT INTO "?(\w+)"?/);
 					if (match) {
 						const table = this.tables.get(match[1]);
-						if (table) {
+						if (table && params) {
 							table.rows.push(params);
 						}
 					}
@@ -77,10 +104,53 @@ function createMockSqlJs(): SqlJsStatic {
 				return new Uint8Array([0, 1, 2, 3]);
 			}
 		},
+		createdDatabases,
 	};
 }
 
 describe("cdb/sql conversion surface", () => {
+	it("batches wide tables with at least one row per insert", () => {
+		const sql = createMockSqlJs();
+		const tableColumns = Array.from({ length: 1000 }, (_, columnIndex) => ({
+			name: `col_${columnIndex}`,
+			columnIndex,
+			type: 0,
+			data: [columnIndex],
+		}));
+
+		mockReadChunk.mockReturnValueOnce({
+			children: {
+				[0x01]: [
+					{
+						name: "WideTable",
+						tableId: 1,
+						tableFlags: 0,
+						rowCount: 1,
+						columns: tableColumns,
+					},
+				],
+			},
+		});
+
+		cdbToSql(new Uint8Array([1, 2, 3]), sql);
+		const [db] = sql.createdDatabases;
+
+		expect(sql.createdDatabases).toHaveLength(1);
+		expect(mockReadChunk).toHaveBeenCalledOnce();
+		expect(db).toBeDefined();
+		expect(db.sqlOperations).toContainEqual({
+			sql: expect.stringContaining('INSERT INTO "WideTable" VALUES ('),
+			params: expect.arrayContaining([0, 999]),
+		});
+		expect(
+			db.sqlOperations.filter((operation) =>
+				operation.sql.startsWith('INSERT INTO "WideTable" VALUES'),
+			),
+		).toHaveLength(1);
+
+		mockReadChunk.mockReset();
+	});
+
 	it("exposes cdbToSql", () => {
 		expect(typeof cdbToSql).toBe("function");
 	});
