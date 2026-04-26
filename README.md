@@ -19,6 +19,14 @@ TypeScript library for converting Pro Cycling Manager CDB database files to/from
 npm install cdb-converter
 ```
 
+## Samples
+
+Example projects are available in the [samples](./samples/) folder:
+
+- [Browser sample](./samples/browser/) - Convert a `.cdb` file to SQLite directly in the browser
+- [Node.js CDB to SQLite sample](./samples/node-cdb-to-sql/) - Convert a `.cdb` file into a `.sqlite` file from the command line
+- [Node.js SQLite to CDB sample](./samples/node-sql-to-cdb/) - Convert a `.sqlite` or `.db` file back into a `.cdb` file from the command line
+
 ## Quick Start
 
 ### Convert CDB to SQLite
@@ -50,7 +58,10 @@ fs.writeFileSync("save.db", sqliteData);
 import initSqlJs from "sql.js";
 import { sqlToCdb } from "cdb-converter";
 
-const SQL = await initSqlJs();
+const SQL = await initSqlJs({
+  locateFile: (filename) =>
+    `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${filename}`,
+});
 
 // Load SQLite database
 const sqliteBuffer = fs.readFileSync("save.db");

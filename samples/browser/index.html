@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>cdb-converter browser sample</title>
+		<style>
+			:root {
+				color-scheme: light;
+				font-family: "Iowan Old Style", "Palatino Linotype", serif;
+				background:
+					radial-gradient(circle at top, #f4efe2 0%, #efe7d4 35%, #d6cab4 100%);
+				color: #1f1a14;
+			}
+
+			body {
+				margin: 0;
+				min-height: 100vh;
+				display: grid;
+				place-items: center;
+				padding: 24px;
+			}
+
+			main {
+				width: min(900px, 100%);
+				background: rgba(255, 252, 245, 0.88);
+				backdrop-filter: blur(12px);
+				border: 1px solid rgba(91, 70, 47, 0.18);
+				border-radius: 24px;
+				box-shadow: 0 24px 80px rgba(68, 51, 34, 0.18);
+				padding: 32px;
+			}
+
+			h1 {
+				margin: 0 0 8px;
+				font-size: clamp(2rem, 4vw, 3.5rem);
+				line-height: 0.95;
+			}
+
+			p {
+				margin: 0;
+				max-width: 60ch;
+				line-height: 1.5;
+			}
+
+			.controls {
+				margin-top: 24px;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+				align-items: center;
+			}
+
+			input[type="file"] {
+				max-width: 100%;
+			}
+
+			button,
+			a.download {
+				appearance: none;
+				border: 0;
+				border-radius: 999px;
+				padding: 12px 18px;
+				background: #2f6a4f;
+				color: #fffdf8;
+				font: inherit;
+				text-decoration: none;
+				cursor: pointer;
+			}
+
+			button[disabled],
+			a.download[aria-disabled="true"] {
+				opacity: 0.45;
+				pointer-events: none;
+			}
+
+			.panel {
+				margin-top: 24px;
+				padding: 18px;
+				border-radius: 18px;
+				background: rgba(255, 255, 255, 0.62);
+				border: 1px solid rgba(91, 70, 47, 0.12);
+			}
+
+			pre,
+			ul {
+				margin: 0;
+			}
+
+			#status {
+				white-space: pre-wrap;
+				font-family: ui-monospace, SFMono-Regular, monospace;
+				font-size: 0.95rem;
+			}
+
+			#tables {
+				padding-left: 18px;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>CDB to SQLite</h1>
+			<p>
+				Load a `.cdb` file, convert it in the browser with `cdbToSql`, then
+				download the generated SQLite database.
+			</p>
+
+			<div class="controls">
+				<input id="cdb-file" type="file" accept=".cdb,application/octet-stream" />
+				<button id="convert" type="button">Convert</button>
+				<a
+					id="download"
+					class="download"
+					href="#"
+					download="converted.sqlite"
+					aria-disabled="true"
+				>
+					Download .sqlite
+				</a>
+			</div>
+
+			<section class="panel">
+				<pre id="status">Waiting for a .cdb file</pre>
+			</section>
+
+			<section class="panel">
+				<ul id="tables"></ul>
+			</section>
+		</main>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js'></script>
+		<script type="module" src="./app.js"></script>
+	</body>
+</html>
