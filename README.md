@@ -1,3 +1,12 @@
+<div align="center">
+
+[![][version]](https://www.npmjs.com/package/cdb-converter)
+[![][license]](https://github.com/mpicciolli/cdb-converter/blob/master/LICENSE)
+[![][installs]](https://www.npmjs.com/package/cdb-converter)
+[![][jsdelivr]](https://cdn.jsdelivr.net/npm/cdb-converter@5)
+
+</div>
+
 # cdb-converter
 
 TypeScript library for converting Pro Cycling Manager CDB database files to/from SQLite and other formats. Lightweight, isomorphic (works in Node.js and browser), and zero-configuration.
@@ -168,4 +177,4 @@ Table flags and column indices are preserved in the database object for round-tr
 
 ## License
 
-MIT - See LICENSE file for details
+MIT - See [LICENSE](./LICENCE.md)file for details
