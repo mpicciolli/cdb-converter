@@ -179,6 +179,7 @@ function renderPreviewTable(result) {
 	for (const column of result.columns) {
 		const cell = document.createElement("th");
 		cell.scope = "col";
+		cell.className = "table-wrap__th";
 		cell.textContent = column;
 		headerRow.append(cell);
 	}
@@ -198,9 +199,10 @@ function renderPreviewTable(result) {
 		const row = document.createElement("tr");
 		for (const value of values) {
 			const cell = document.createElement("td");
+			cell.className = "table-wrap__td";
 			if (value == null) {
 				const span = document.createElement("span");
-				span.className = "null-val";
+				span.className = "null-value";
 				span.textContent = "null";
 				cell.append(span);
 			} else {
@@ -219,7 +221,7 @@ function selectTable(tableName) {
 	}
 
 	for (const button of tablesList.querySelectorAll("button")) {
-		button.classList.toggle("active", button.dataset.tableName === tableName);
+		button.classList.toggle("tabs__item--active", button.dataset.tableName === tableName);
 	}
 
 	const escapedName = quoteIdentifier(tableName);
@@ -248,12 +250,13 @@ function clearDownload() {
 function renderTables(rows) {
 	tablesList.replaceChildren();
 	tablesList.dataset.state = rows.length === 0 ? "empty" : "ready";
+	tablesList.classList.toggle("tabs--empty", rows.length === 0);
 	tableCount.textContent = String(rows.length);
 
 	for (const [tableName, tableId] of rows) {
 		const button = document.createElement("button");
 		button.type = "button";
-		button.className = "tab";
+		button.className = "tabs__item";
 		button.dataset.tableName = String(tableName);
 		button.textContent = `${tableName} (#${tableId})`;
 		button.addEventListener("click", () => {
@@ -305,16 +308,16 @@ fileInput.addEventListener("change", () => {
 
 dropzone.addEventListener("dragover", (event) => {
 	event.preventDefault();
-	dropzone.classList.add("over");
+	dropzone.classList.add("dropzone--over");
 });
 
 dropzone.addEventListener("dragleave", () => {
-	dropzone.classList.remove("over");
+	dropzone.classList.remove("dropzone--over");
 });
 
 dropzone.addEventListener("drop", (event) => {
 	event.preventDefault();
-	dropzone.classList.remove("over");
+	dropzone.classList.remove("dropzone--over");
 	const file = event.dataTransfer?.files?.[0];
 	if (!file) {
 		return;
