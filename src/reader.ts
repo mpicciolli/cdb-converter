@@ -47,6 +47,16 @@ export class CDBReader {
 		return chunk.header;
 	}
 
+	private getRequiredDescription(chunk: CDBChunk, label: string): string {
+		const description = this.getChunkHeader(chunk).description;
+
+		if (description === null) {
+			throw new Error(`Invalid ${label} chunk: missing ${label} description`);
+		}
+
+		return description;
+	}
+
 	private getRequiredChild<T>(chunk: CDBChunk, childType: number): T {
 		const children = this.getChunkChildren(chunk);
 		const value = children[childType];
@@ -174,8 +184,10 @@ export class CDBReader {
 								: (column.data ?? []),
 						}));
 
+						const tableName = this.getRequiredDescription(tableChunk, "table");
+
 						return {
-							name: this.getChunkHeader(tableChunk).description,
+							name: tableName,
 							rowCount,
 							columns,
 							tableId: this.getRequiredChild<number>(
@@ -196,7 +208,7 @@ export class CDBReader {
 				{
 					const columns = this.readArray(() => {
 						const columnChunk = this.readChunk();
-						const colName = this.getChunkHeader(columnChunk).description;
+						const colName = this.getRequiredDescription(columnChunk, "column");
 
 						return {
 							name: colName,

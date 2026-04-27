@@ -130,9 +130,17 @@ function setFileLabel(file) {
 	fileRow.style.display = file ? "flex" : "none";
 	fileName.textContent = file ? file.name : "-";
 	fileSize.textContent = file ? formatBytes(file.size) : "-";
-	dropzoneCopy.innerHTML = file
-		? `Ready to convert <strong>${file.name}</strong>`
-		: "Drop a <strong>.cdb</strong> file here";
+
+	if (file) {
+		const fileNameStrong = document.createElement("strong");
+		fileNameStrong.textContent = file.name;
+		dropzoneCopy.replaceChildren("Ready to convert ", fileNameStrong);
+	} else {
+		const extensionStrong = document.createElement("strong");
+		extensionStrong.textContent = ".cdb";
+		dropzoneCopy.replaceChildren("Drop a ", extensionStrong, " file here");
+	}
+
 	dropzone.dataset.hasFile = file ? "true" : "false";
 }
 

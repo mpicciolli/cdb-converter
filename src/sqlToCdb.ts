@@ -84,6 +84,12 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 
 	tables.forEach((tableInfo) => {
 		const schemaResult = db.exec(`PRAGMA table_info("${tableInfo.name}")`);
+		if (schemaResult.length === 0 || schemaResult[0].values.length === 0) {
+			throw new Error(
+				`No schema information available for table "${tableInfo.name}"`,
+			);
+		}
+
 		const columnInfo: Record<string, ColumnMetadata> = {};
 
 		schemaResult[0].values.forEach((row) => {

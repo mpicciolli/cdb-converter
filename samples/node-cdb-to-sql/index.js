@@ -5,7 +5,9 @@ import initSqlJs from "sql.js";
 import { cdbToSql } from "../../dist/index.mjs";
 
 function usage() {
-	console.error("Usage: npm run sample:node <input.cdb> [output.sqlite]");
+	console.error(
+		"Usage: node samples/node-cdb-to-sql/index.js <input.cdb> [output.sqlite]",
+	);
 }
 
 function getDefaultOutputPath(inputPath) {

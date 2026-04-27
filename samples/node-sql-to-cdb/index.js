@@ -6,7 +6,7 @@ import { sqlToCdb } from "../../dist/index.mjs";
 
 function usage() {
 	console.error(
-		"Usage: npm run sample:node:sql-to-cdb -- <input.sqlite> [output.cdb]",
+		"Usage: node samples/node-sql-to-cdb/index.js <input.sqlite> [output.cdb]",
 	);
 }
 

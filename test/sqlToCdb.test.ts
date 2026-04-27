@@ -54,6 +54,28 @@ describe("sql to cdb conversion surface", () => {
 		expect(() => sqlToCdb(mockDb)).toThrow(/DB_STRUCTURE/);
 	});
 
+	it("throws when schema information for a listed table is unavailable", () => {
+		const mockDb: SqlDatabase = {
+			run: () => {},
+			exec: (sql: string) => {
+				if (sql.includes("DB_STRUCTURE")) {
+					return [{ columns: ["TableName", "ID"], values: [["DYN_team", 1]] }];
+				}
+
+				if (sql.includes('PRAGMA table_info("DYN_team")')) {
+					return [];
+				}
+
+				return [{ columns: [], values: [] }];
+			},
+			export: () => new Uint8Array([0, 1, 2]),
+		};
+
+		expect(() => sqlToCdb(mockDb)).toThrow(
+			/No schema information available for table "DYN_team"/,
+		);
+	});
+
 	it("throws when a PRAGMA table_info column type is missing the encoded suffix", () => {
 		const mockDb = createSqlToCdbMockDb("INTEGER");
 
