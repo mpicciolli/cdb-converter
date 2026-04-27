@@ -1,0 +1,376 @@
+:root {
+	--pico-font-size: 15px;
+	--pico-font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+	--pico-font-family-monospace: "IBM Plex Mono", "SFMono-Regular", monospace;
+}
+
+body {
+	background: var(--pico-background-color);
+}
+
+.demo {
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 0 1.5rem 3rem;
+}
+
+.page-header {
+	text-align: center;
+	padding: 3rem 0 2rem;
+}
+
+.page-header__title {
+	margin-bottom: 0.25rem;
+	font-size: 2.25rem;
+	letter-spacing: -0.04em;
+}
+
+.page-header__subtitle {
+	color: var(--pico-muted-color);
+	margin-bottom: 1.5rem;
+	font-size: 1rem;
+}
+
+.badge-list {
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+	margin-bottom: 1.5rem;
+	flex-wrap: wrap;
+}
+
+.badge-list__item {
+	font-size: 11px;
+	padding: 3px 10px;
+	border-radius: 99px;
+	border: 1px solid var(--pico-muted-border-color);
+	color: var(--pico-muted-color);
+	font-family: var(--pico-font-family-monospace);
+}
+
+.install {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.install__code {
+	font-size: 14px;
+	background: var(--pico-code-background-color);
+	padding: 8px 16px;
+	border-radius: var(--pico-border-radius);
+	border: 1px solid var(--pico-muted-border-color);
+}
+
+.install__copy {
+	background: none;
+	border: 1px solid var(--pico-muted-border-color);
+	padding: 6px 10px;
+	border-radius: var(--pico-border-radius);
+	cursor: pointer;
+	color: var(--pico-muted-color);
+	display: flex;
+	align-items: center;
+	line-height: 1;
+	margin-bottom: 0;
+}
+
+.install__copy:hover {
+	color: var(--pico-color);
+	border-color: var(--pico-color);
+}
+
+section {
+	margin: 2.5rem 0;
+}
+
+.section__label {
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--pico-muted-color);
+	margin-bottom: 0.75rem;
+	font-weight: 600;
+}
+
+.dropzone {
+	border: 2px dashed var(--pico-muted-border-color);
+	border-radius: var(--pico-border-radius);
+	padding: 2.5rem 1.5rem;
+	text-align: center;
+	cursor: pointer;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
+}
+
+.dropzone:hover,
+.dropzone--over,
+.dropzone[data-has-file="true"] {
+	border-color: var(--pico-primary);
+	background: color-mix(
+		in srgb,
+		var(--pico-primary-background) 10%,
+		transparent
+	);
+}
+
+.dropzone__icon {
+	display: block;
+	margin: 0 auto 0.75rem;
+	opacity: 0.35;
+	width: 36px;
+	height: 36px;
+}
+
+.dropzone__text {
+	margin: 0;
+	color: var(--pico-muted-color);
+	font-size: 0.9rem;
+}
+
+.dropzone__hint {
+	font-size: 0.8rem;
+	color: var(--pico-muted-color);
+	opacity: 0.7;
+}
+
+.dropzone__input {
+	display: none;
+}
+
+.file {
+	display: none;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px;
+	border: 1px solid var(--pico-muted-border-color);
+	border-radius: var(--pico-border-radius);
+	margin-top: 0.75rem;
+	background: var(--pico-card-background-color);
+}
+
+.file__chip {
+	background: color-mix(in srgb, var(--pico-primary) 12%, transparent);
+	color: var(--pico-primary);
+	font-size: 11px;
+	font-weight: 700;
+	padding: 4px 8px;
+	border-radius: 6px;
+	font-family: var(--pico-font-family-monospace);
+}
+
+.file__info {
+	flex: 1;
+}
+
+.file__name {
+	font-size: 13px;
+	display: block;
+}
+
+.file__size {
+	color: var(--pico-muted-color);
+}
+
+progress {
+	margin-top: 0.75rem;
+	display: none;
+}
+
+.convert-button {
+	display: none;
+	width: 100%;
+	margin-top: 0.75rem;
+}
+
+.logs {
+	margin-top: 0.75rem;
+}
+
+.logs__output {
+	margin: 0;
+	min-height: 8rem;
+	padding: 15px;
+}
+
+.result {
+	display: none;
+	margin-top: 1rem;
+}
+
+.result__body {
+	padding: 0;
+	overflow: hidden;
+}
+
+.result__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--pico-muted-border-color);
+	background: var(--pico-card-sectioning-background-color);
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.result__stats {
+	display: flex;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.result__stat {
+	font-size: 12px;
+	color: var(--pico-muted-color);
+}
+
+.result__stat-value {
+	color: var(--pico-color);
+}
+
+.result__download {
+	font-size: 12px;
+	padding: 5px 14px;
+	margin: 0;
+}
+
+.tabs {
+	display: flex;
+	gap: 4px;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--pico-muted-border-color);
+	overflow-x: auto;
+	background: var(--pico-card-background-color);
+}
+
+.tabs--empty {
+	display: block;
+	color: var(--pico-muted-color);
+	font-size: 12px;
+}
+
+.tabs__item {
+	font-size: 12px;
+	padding: 4px 10px;
+	border-radius: var(--pico-border-radius);
+	cursor: pointer;
+	color: var(--pico-muted-color);
+	background: none;
+	border: 1px solid transparent;
+	white-space: nowrap;
+	margin: 0;
+}
+
+.tabs__item--active {
+	background: color-mix(in srgb, var(--pico-primary) 10%, transparent);
+	border-color: var(--pico-primary-border);
+	color: var(--pico-primary);
+	font-weight: 600;
+}
+
+.table-wrap {
+	overflow-x: auto;
+}
+
+.table-wrap__table {
+	margin: 0;
+	font-size: 12px;
+	font-family: var(--pico-font-family-monospace);
+	width: 100%;
+}
+
+.table-wrap__th {
+	color: var(--pico-muted-color);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.table-wrap__td {
+	white-space: nowrap;
+}
+
+.null-value {
+	color: var(--pico-muted-color);
+	font-style: italic;
+}
+
+.preview-meta {
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--pico-muted-border-color);
+	font-size: 12px;
+	color: var(--pico-muted-color);
+}
+
+.logs__output,
+.usage-code {
+	border-radius: var(--pico-border-radius);
+}
+
+.usage-code__code {
+	font-size: 13px;
+	line-height: 1.8;
+}
+
+.token--keyword {
+	color: var(--pico-primary);
+}
+
+.token--string {
+	color: var(--pico-ins-color);
+}
+
+.token--comment {
+	color: var(--pico-muted-color);
+}
+
+footer {
+	text-align: center;
+	padding: 2rem 0 1rem;
+	border-top: 1px solid var(--pico-muted-border-color);
+	margin-top: 1rem;
+}
+
+.footer__nav {
+	display: flex;
+	justify-content: center;
+	gap: 24px;
+	flex-wrap: wrap;
+}
+
+.footer__link {
+	font-size: 13px;
+	color: var(--pico-muted-color);
+	text-decoration: none;
+}
+
+.footer__link:hover {
+	color: var(--pico-color);
+}
+
+.footer__license {
+	display: block;
+	margin-top: 0.75rem;
+	color: var(--pico-muted-color);
+}
+
+@media (max-width: 640px) {
+	.demo {
+		padding-inline: 1rem;
+	}
+
+	.page-header {
+		padding-top: 2.25rem;
+	}
+
+	.page-header__title {
+		font-size: 2rem;
+	}
+
+	.result__head {
+		align-items: flex-start;
+	}
+}

@@ -19,6 +19,14 @@ TypeScript library for converting Pro Cycling Manager CDB database files to/from
 npm install cdb-converter
 ```
 
+## Samples
+
+Example projects are available in the [samples](./samples/) folder:
+
+- [Browser sample](./samples/browser/) - Convert a `.cdb` file to SQLite directly in the browser
+- [Node.js CDB to SQLite sample](./samples/node-cdb-to-sql/) - Convert a `.cdb` file into a `.sqlite` file from the command line
+- [Node.js SQLite to CDB sample](./samples/node-sql-to-cdb/) - Convert a `.sqlite` or `.db` file back into a `.cdb` file from the command line
+
 ## Quick Start
 
 ### Convert CDB to SQLite
@@ -30,7 +38,7 @@ import initSqlJs from "sql.js";
 const SQL = await initSqlJs();
 
 // Read CDB file
-const cdbBuffer = fs.readFileSync("game.cdb");
+const cdbBuffer = fs.readFileSync("save.cdb");
 
 // Convert to SQLite
 const db = cdbToSql(cdbBuffer, SQL);
@@ -41,23 +49,29 @@ console.log(result[0].values);
 
 // Export to SQLite file
 const sqliteData = db.export();
-fs.writeFileSync("game.db", sqliteData);
+fs.writeFileSync("save.db", sqliteData);
 ```
 
 ### Convert SQLite back to CDB
 
 ```typescript
+import initSqlJs from "sql.js";
 import { sqlToCdb } from "cdb-converter";
 
+const SQL = await initSqlJs({
+  locateFile: (filename) =>
+    `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${filename}`,
+});
+
 // Load SQLite database
-const sqliteBuffer = fs.readFileSync("game.db");
+const sqliteBuffer = fs.readFileSync("save.db");
 const db = new SQL.Database(sqliteBuffer);
 
 // Convert back to CDB
 const cdbBuffer = sqlToCdb(db);
 
 // Save as CDB
-fs.writeFileSync("game.cdb", cdbBuffer);
+fs.writeFileSync("save.cdb", cdbBuffer);
 ```
 
 ### Compression
@@ -88,9 +102,11 @@ The library preserves all CDB data types during conversion:
 
 ## API Reference
 
-### `cdbToSql(cdbBuffer: ArrayBuffer | Buffer, SQL: SqlJsStatic): Database`
+### `cdbToSql(cdbBuffer: ArrayBuffer | Uint8Array, SQL: SqlJsStatic): Database`
 
 Convert CDB binary data to SQLite database instance.
+
+You must pass the initialized `sql.js` module returned by `initSqlJs()`. This library does not initialize `sql.js` internally because that setup is asynchronous and environment-specific: the caller controls how the wasm file is loaded in Node.js or in the browser, and `cdbToSql` only needs the ready-to-use `Database` constructor exposed by that module.
 
 - **cdbBuffer**: Raw CDB binary data (compressed or uncompressed)
 - **SQL**: sql.js instance from `initSqlJs()`
@@ -103,11 +119,11 @@ Convert SQLite database back to CDB binary format (automatically compressed).
 - **db**: sql.js Database instance
 - **returns**: Compressed CDB binary data (ArrayBuffer)
 
-### `compressCdb(data: ArrayBuffer | Buffer): ArrayBuffer`
+### `compressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer`
 
 Compress CDB data using zlib deflate.
 
-### `decompressCdb(data: ArrayBuffer | Buffer): ArrayBuffer`
+### `decompressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer`
 
 Decompress CDB data (handles both compressed and uncompressed input).
 

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>cdb-converter</title>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+		/>
+		<link rel="stylesheet" href="./style.css" />
+	</head>
+	<body>
+		<main class="demo">
+			<header class="page-header">
+				<h1 class="page-header__title">cdb-converter</h1>
+				<p class="page-header__subtitle">Convert Pro Cycling Manager save files to SQLite in one line.</p>
+				<div class="badge-list">
+					<span class="badge-list__item">MIT</span>
+					<span class="badge-list__item">ESM + CJS</span>
+				</div>
+				<div class="install">
+					<code id="install-command" class="install__code">npm install cdb-converter</code>
+					<button id="copy-install" class="install__copy" type="button" title="Copy to clipboard" aria-label="Copy install command">
+						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+							<rect x="5" y="5" width="9" height="9" rx="2" />
+							<path d="M3 11V3a2 2 0 0 1 2-2h8" />
+						</svg>
+					</button>
+				</div>
+			</header>
+
+			<section>
+				<p class="section__label">Try it</p>
+				<label id="dropzone" class="dropzone" for="cdb-file" data-has-file="false">
+					<svg class="dropzone__icon" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+						<rect x="4" y="6" width="20" height="26" rx="3" />
+						<path d="M14 6v8h10" />
+						<path d="M24 6l4 4v18a3 3 0 0 1-3 3H9" />
+						<path d="M18 22v-6M15 19l3-3 3 3" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+					<p id="dropzone-copy" class="dropzone__text">Drop a <strong>.cdb</strong> file here</p>
+					<span class="dropzone__hint">or click to browse</span>
+					<input id="cdb-file" class="dropzone__input" type="file" accept=".cdb,application/octet-stream" />
+				</label>
+
+				<div class="file" id="file-row">
+					<div class="file__chip">CDB</div>
+					<div class="file__info">
+						<strong id="file-name" class="file__name">-</strong>
+						<small id="file-size" class="file__size">-</small>
+					</div>
+				</div>
+
+				<progress id="progress" value="0" max="100"></progress>
+				<button class="convert-button" id="convert" type="button">Convert to SQLite</button>
+
+				<div class="logs">
+					<p class="section__label">Logs</p>
+					<pre id="status" class="logs__output">Waiting for a .cdb file</pre>
+				</div>
+
+				<div class="result" id="result-card">
+					<article class="result__body">
+						<div class="result__head">
+							<div class="result__stats">
+								<div class="result__stat"><strong id="tcount" class="result__stat-value">0</strong> tables</div>
+								<div class="result__stat"><strong id="rcount" class="result__stat-value">0</strong> rows</div>
+								<div class="result__stat"><strong id="ssize" class="result__stat-value">0 B</strong> SQLite</div>
+							</div>
+							<a
+								id="download"
+								href="#"
+								download="converted.sqlite"
+								role="button"
+								class="outline result__download"
+								aria-disabled="true"
+							>
+								Download .sqlite
+							</a>
+						</div>
+						<div id="tables" class="tabs" data-state="empty">No tables detected</div>
+						<div id="preview-meta" class="preview-meta">
+							Convert a file, then pick a table to inspect its first rows.
+						</div>
+						<div class="table-wrap">
+							<table id="preview-table" class="table-wrap__table" role="grid">
+								<thead id="preview-head"></thead>
+								<tbody id="preview-body"></tbody>
+							</table>
+						</div>
+					</article>
+				</div>
+			</section>
+
+			<section>
+				<p class="section__label">Usage</p>
+				<pre class="usage-code"><code class="usage-code__code"><span class="token--keyword">import</span> { cdbToSql } <span class="token--keyword">from</span> <span class="token--string">"cdb-converter"</span>
+
+<span class="token--comment">// Browser or Node with sql.js initialized</span>
+<span class="token--keyword">const</span> db = cdbToSql(cdbBuffer, SQL)
+<span class="token--keyword">const</span> rows = db.exec(<span class="token--string">"SELECT * FROM DYN_Cyclist LIMIT 5"</span>)
+<span class="token--keyword">const</span> sqliteBytes = db.export()</code></pre>
+			</section>
+			<footer>
+				<nav class="footer__nav">
+					<a class="footer__link" href="https://github.com/mpicciolli/cdb-converter" rel="noopener noreferrer" target="_blank">GitHub</a>
+					<a class="footer__link" href="https://github.com/mpicciolli/cdb-converter/blob/main/LICENSE.md" rel="noopener noreferrer" target="_blank">License</a>
+				</nav>
+			</footer>
+		</main>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+		<script type="module" src="./app.js"></script>
+	</body>
+</html>
