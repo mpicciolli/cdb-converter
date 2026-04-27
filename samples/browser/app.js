@@ -221,7 +221,10 @@ function selectTable(tableName) {
 	}
 
 	for (const button of tablesList.querySelectorAll("button")) {
-		button.classList.toggle("tabs__item--active", button.dataset.tableName === tableName);
+		button.classList.toggle(
+			"tabs__item--active",
+			button.dataset.tableName === tableName,
+		);
 	}
 
 	const escapedName = quoteIdentifier(tableName);
