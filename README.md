@@ -168,4 +168,4 @@ Table flags and column indices are preserved in the database object for round-tr
 
 ## License
 
-MIT - See [LICENSE.md](./LICENSE.md) for details.
+MIT - See [LICENSE](./LICENSE) for details.
