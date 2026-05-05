@@ -2,6 +2,8 @@
 
 TypeScript library for converting Pro Cycling Manager CDB database files to/from SQLite and other formats. Lightweight, isomorphic (works in Node.js and browser), and zero-configuration.
 
+> Based on [agfor/pcmdbedit](https://github.com/agfor/pcmdbedit/) — many thanks to agfor for the foundational work.
+
 ## Features
 
 - ✅ **CDB ↔ SQLite** - Convert between binary CDB format and SQLite databases
@@ -10,8 +12,6 @@ TypeScript library for converting Pro Cycling Manager CDB database files to/from
 - ✅ **Lightweight** - Minimal dependencies (pako, sql.js only)
 - ✅ **Tree-shakeable** - Pure functions, no side effects
 - ✅ **Preserves metadata** - Round-trip conversion maintains all table/column information
-- 🔜 **JSON export** - Phase 2
-- 🔜 **CSV export** - Phase 3
 
 ## Installation
 
@@ -168,4 +168,4 @@ Table flags and column indices are preserved in the database object for round-tr
 
 ## License
 
-MIT - See LICENSE file for details
+MIT - See [LICENSE](./LICENSE) for details.
