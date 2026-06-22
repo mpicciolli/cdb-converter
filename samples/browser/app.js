@@ -1,4 +1,4 @@
-import { cdbToSql } from "../../dist/index.mjs";
+import { cdbToSql } from "./dist/index.mjs";
 
 const fileInput = document.querySelector("#cdb-file");
 const dropzoneCopy = document.querySelector("#dropzone-copy");
