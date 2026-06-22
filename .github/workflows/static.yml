@@ -47,9 +47,8 @@ jobs:
       - name: Prepare Pages artifact
         run: |
           mkdir -p _site
+          cp -R samples/browser/. _site/
           cp -R dist _site/dist
-          mkdir -p _site/samples
-          cp -R samples/browser _site/samples/browser
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
