@@ -8,6 +8,14 @@ export { sqlToCdb } from "./sqlToCdb";
 export { compressCdb, decompressCdb } from "./compression";
 export { CDBReader } from "./reader";
 export { CDBWriter } from "./writer";
+export { readCdbTables, verifyRoundTrip } from "./verifyRoundTrip";
+
+export type {
+	RoundTripDifference,
+	RoundTripDifferenceKind,
+	RoundTripReport,
+	VerifyRoundTripOptions,
+} from "./verifyRoundTrip";
 
 export type {
 	ChunkHeader,

@@ -127,6 +127,45 @@ Compress CDB data using zlib deflate.
 
 Decompress CDB data (handles both compressed and uncompressed input).
 
+### `readCdbTables(cdbBuffer: ArrayBuffer | Uint8Array): TableInfo[]`
+
+Parse a (compressed or uncompressed) CDB buffer into its list of tables without
+going through SQLite. Useful for inspection or diffing.
+
+### `verifyRoundTrip(cdbBuffer, SQL, options?): RoundTripReport`
+
+Convert a CDB to SQLite and back, then compare the result against the source to
+detect data loss or corruption. A failing CDB round-trip means the save may not
+load in the game, so this is handy both as a CI guard and as a pre-write check
+for tools that edit a database.
+
+```typescript
+import initSqlJs from "sql.js";
+import { verifyRoundTrip } from "cdb-converter";
+
+const SQL = await initSqlJs();
+const report = verifyRoundTrip(fs.readFileSync("save.cdb"), SQL);
+
+if (!report.ok) {
+  for (const diff of report.differences) {
+    console.warn(`[${diff.kind}] ${diff.table ?? "(db)"}: ${diff.detail}`);
+  }
+}
+```
+
+- **cdbBuffer**: Raw CDB binary data (compressed or uncompressed)
+- **SQL**: sql.js instance from `initSqlJs()`
+- **options.throughDisk** (default `true`): export and reopen the intermediate
+  SQLite database before writing it back, mirroring a real save-then-reload
+  flow. This surfaces state kept only in memory (such as table flags). Set to
+  `false` to check the pure in-memory conversion contract.
+- **options.maxCellDifferences** (default `20`): cap on individual cell
+  differences reported.
+- **returns**: a `RoundTripReport` with `ok`, `byteIdenticalDecompressed`, and a
+  list of `differences` (`{ table, kind, detail }`). `byteIdenticalDecompressed`
+  is a stricter, diagnostic-only signal and is expected to be `false` on many
+  real files.
+
 ## Metadata Preservation
 
 The library uses a special `DB_STRUCTURE` table to preserve CDB metadata:
