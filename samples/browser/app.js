@@ -33,6 +33,7 @@ async function convertFile() {
 	}
 
 	setBusy(true);
+	closeCurrentDb();
 	clearDownload();
 	resultCard.style.display = "none";
 	setStatus(`Converting ${file.name}...`);
@@ -88,7 +89,7 @@ async function convertFile() {
 			].join("\n"),
 		);
 	} catch (error) {
-		currentDb = undefined;
+		closeCurrentDb();
 		renderTables([]);
 		resetStats();
 		resultCard.style.display = "none";
@@ -284,6 +285,7 @@ function renderTables(rows) {
 
 function handlePickedFile(file) {
 	selectedFile = file;
+	closeCurrentDb();
 	clearDownload();
 	renderTables([]);
 	clearPreview();
@@ -303,6 +305,13 @@ function copyInstallCommand() {
 		copyInstallButton.innerHTML =
 			'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M3 11V3a2 2 0 0 1 2-2h8"/></svg>';
 	}, 1500);
+}
+
+function closeCurrentDb() {
+	if (currentDb) {
+		currentDb.close();
+		currentDb = undefined;
+	}
 }
 
 convertButton.addEventListener("click", () => {
