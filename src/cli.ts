@@ -3,6 +3,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 import initSqlJs from "sql.js";
 import { cdbToSql } from "./cdbToSql";
 import { sqlToCdb } from "./sqlToCdb";
@@ -82,7 +83,7 @@ export function detectDirection(inputPath: string): Direction {
 
 /**
  * Compute the default output path for a given input and direction by swapping
- * the extension (or appending one when the input extension is unexpected).
+ * the extension (or appending one when the input has no extension).
  */
 export function getDefaultOutputPath(
 	inputPath: string,
@@ -128,13 +129,15 @@ async function convert(
 
 	if (direction === "cdb-to-sql") {
 		const db = cdbToSql(inputBytes, SQL);
-		outputBytes = db.export();
 
 		const tables = db.exec(
 			"SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID",
 		);
 		const rows = tables[0]?.values ?? [];
 		summary = [`Tables : ${rows.length}`];
+
+		outputBytes = db.export();
+		db.close();
 	} else {
 		const db = new SQL.Database(inputBytes);
 		outputBytes = new Uint8Array(sqlToCdb(db));
@@ -181,7 +184,7 @@ export async function run(argv: string[]): Promise<void> {
 
 const isDirectRun =
 	typeof process.argv[1] === "string" &&
-	import.meta.url === new URL(`file://${process.argv[1]}`).href;
+	import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
 
 if (isDirectRun) {
 	void run(process.argv.slice(2));
