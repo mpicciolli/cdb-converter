@@ -74,7 +74,7 @@ export interface SqlJsStatic {
 }
 
 export interface SqlDatabase {
-	run(sql: string, params?: unknown[]): void;
+	run(sql: string, params?: unknown[] | Record<string, unknown> | null): void;
 	exec(sql: string): Array<{ columns: string[]; values: unknown[][] }>;
 	export(): Uint8Array;
 	_tableFlagsMap?: Map<number, number>;
