@@ -2,6 +2,8 @@
  * Shared TypeScript types and interfaces for CDB converter library
  */
 
+import type { Database } from "sql.js";
+
 export enum DataType {
 	INTEGER = 0,
 	FLOAT = 1,
@@ -70,13 +72,10 @@ export interface CDBChunk {
 export type ColumnData = Array<string | number | boolean>;
 
 export interface SqlJsStatic {
-	Database: new (data?: ArrayLike<number>) => SqlDatabase;
+	Database: new (data?: ArrayLike<number> | null) => SqlDatabase;
 }
 
-export interface SqlDatabase {
-	run(sql: string, params?: unknown[]): void;
-	exec(sql: string): Array<{ columns: string[]; values: unknown[][] }>;
-	export(): Uint8Array;
+export interface SqlDatabase extends Database {
 	_tableFlagsMap?: Map<number, number>;
 }
 
