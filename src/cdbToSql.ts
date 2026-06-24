@@ -2,6 +2,7 @@
  * Convert CDB binary format to SQLite database
  */
 
+import type { SqlValue } from "sql.js";
 import { decompressCdb } from "./compression";
 import { CDBReader } from "./reader";
 import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
@@ -23,7 +24,7 @@ export function cdbToSql(
 ): SqlDatabase {
 	const decompressedData = decompressCdb(cdbData);
 	const reader = new CDBReader(decompressedData);
-	const db = new SQL.Database();
+	const db = new SQL.Database() as SqlDatabase;
 
 	const wrapperChunk = reader.readChunk();
 	const wrapperChildren = wrapperChunk.children;
@@ -94,11 +95,11 @@ export function cdbToSql(
 				const valueSets = Array(batchCount)
 					.fill(`(${placeholders})`)
 					.join(", ");
-				const params: unknown[] = [];
+				const params: SqlValue[] = [];
 
 				for (let rowIdx = i; rowIdx < end; rowIdx++) {
 					for (const col of table.columns) {
-						params.push(col.data[rowIdx]);
+						params.push(col.data[rowIdx] as SqlValue);
 					}
 				}
 
