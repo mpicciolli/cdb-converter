@@ -15,7 +15,6 @@ export type {
 	ColumnInfo,
 	ColumnMetadata,
 	SqlDatabase,
-	SqlJsStatic,
 	TableInfo,
 	CDBChunk,
 } from "./types";

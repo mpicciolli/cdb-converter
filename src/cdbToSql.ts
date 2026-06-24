@@ -2,11 +2,11 @@
  * Convert CDB binary format to SQLite database
  */
 
-import type { SqlValue } from "sql.js";
+import type { SqlJsStatic, SqlValue } from "sql.js";
 import { decompressCdb } from "./compression";
 import { CDBReader } from "./reader";
 import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
-import type { SqlDatabase, SqlJsStatic, TableInfo } from "./types";
+import type { SqlDatabase, TableInfo } from "./types";
 
 function escapeSqlIdentifier(identifier: string): string {
 	return identifier.replace(/"/g, '""');
