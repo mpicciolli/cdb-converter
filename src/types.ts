@@ -2,7 +2,7 @@
  * Shared TypeScript types and interfaces for CDB converter library
  */
 
-import type { Database } from "sql.js";
+import type { Database, SqlJsStatic as SqlJsStaticBase } from "sql.js";
 
 export enum DataType {
 	INTEGER = 0,
@@ -71,9 +71,12 @@ export interface CDBChunk {
 
 export type ColumnData = Array<string | number | boolean>;
 
-export interface SqlJsStatic {
-	Database: new (data?: ArrayLike<number> | null) => SqlDatabase;
-}
+/**
+ * The sql.js module object returned by initSqlJs(). Re-exported as-is so the
+ * type always matches whatever @types/sql.js version the consumer resolves,
+ * avoiding constructor-signature drift when passing SQL into cdbToSql.
+ */
+export type SqlJsStatic = SqlJsStaticBase;
 
 export interface SqlDatabase extends Database {
 	_tableFlagsMap?: Map<number, number>;

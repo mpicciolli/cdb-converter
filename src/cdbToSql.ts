@@ -24,7 +24,7 @@ export function cdbToSql(
 ): SqlDatabase {
 	const decompressedData = decompressCdb(cdbData);
 	const reader = new CDBReader(decompressedData);
-	const db = new SQL.Database();
+	const db = new SQL.Database() as SqlDatabase;
 
 	const wrapperChunk = reader.readChunk();
 	const wrapperChildren = wrapperChunk.children;
