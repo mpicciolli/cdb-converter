@@ -46,19 +46,19 @@
 	},
 	"dependencies": {
 		"@types/sql.js": "^1.4.11",
-		"pako": "^2.1.0",
-		"sql.js": "^1.13.0"
+		"pako": "^2.2.0",
+		"sql.js": "^1.14.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.13",
-		"@types/node": "^22.0.0",
-		"@types/pako": "^2.0.0",
+		"@types/node": "^22.20.0",
+		"@types/pako": "^2.0.4",
+		"@vitest/coverage-v8": "^4.1.5",
 		"husky": "^9.1.7",
 		"lint-staged": "^15.5.2",
-		"tsup": "^8.0.0",
-		"typescript": "^5.0.0",
-		"vitest": "^4.1.5",
-		"@vitest/coverage-v8": "^4.1.5"
+		"tsup": "^8.5.1",
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.5"
 	},
 	"engines": {
 		"node": ">=22.0.0"
