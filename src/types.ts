@@ -4,6 +4,8 @@
 
 import type { Database } from "sql.js";
 
+export type { SqlJsStatic } from "sql.js";
+
 export enum DataType {
 	INTEGER = 0,
 	FLOAT = 1,
