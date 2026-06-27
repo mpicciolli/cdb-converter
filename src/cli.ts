@@ -130,18 +130,25 @@ async function convert(
 	if (direction === "cdb-to-sql") {
 		const db = cdbToSql(inputBytes, SQL);
 
-		const tables = db.exec(
-			"SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID",
-		);
-		const rows = tables[0]?.values ?? [];
-		summary = [`Tables : ${rows.length}`];
+		try {
+			const tables = db.exec(
+				"SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID",
+			);
+			const rows = tables[0]?.values ?? [];
+			summary = [`Tables : ${rows.length}`];
 
-		outputBytes = db.export();
-		db.close();
+			outputBytes = db.export();
+		} finally {
+			db.close?.();
+		}
 	} else {
 		const db = new SQL.Database(inputBytes);
-		outputBytes = new Uint8Array(sqlToCdb(db));
-		db.close();
+
+		try {
+			outputBytes = new Uint8Array(sqlToCdb(db));
+		} finally {
+			db.close?.();
+		}
 	}
 
 	await mkdir(dirname(outputPath), { recursive: true });
