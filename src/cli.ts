@@ -8,6 +8,10 @@ import initSqlJs from "sql.js";
 import { cdbToSql } from "./cdbToSql";
 import { sqlToCdb } from "./sqlToCdb";
 
+declare const CDB_CONVERTER_VERSION: string | undefined;
+const VERSION =
+	typeof CDB_CONVERTER_VERSION === "string" ? CDB_CONVERTER_VERSION : "unknown";
+
 export type Direction = "cdb-to-sql" | "sql-to-cdb";
 
 export interface ParsedArgs {
@@ -99,17 +103,6 @@ export function getDefaultOutputPath(
 	return `${inputPath}${targetExtension}`;
 }
 
-async function readVersion(): Promise<string> {
-	try {
-		const packageJsonUrl = new URL("../package.json", import.meta.url);
-		const raw = await readFile(packageJsonUrl, "utf8");
-		const pkg = JSON.parse(raw) as { version?: string };
-		return pkg.version ?? "unknown";
-	} catch {
-		return "unknown";
-	}
-}
-
 async function convert(
 	input: string,
 	output: string | undefined,
@@ -170,7 +163,7 @@ export async function run(argv: string[]): Promise<void> {
 	}
 
 	if (parsed.command === "version") {
-		console.log(await readVersion());
+		console.log(VERSION);
 		return;
 	}
 

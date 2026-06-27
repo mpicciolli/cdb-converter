@@ -1,4 +1,9 @@
+import { createRequire } from "node:module";
 import { defineConfig } from "tsup";
+
+const { version } = createRequire(import.meta.url)("./package.json") as {
+	version: string;
+};
 
 export default defineConfig([
 	{
@@ -25,6 +30,9 @@ export default defineConfig([
 		dts: false,
 		shims: true,
 		clean: false,
+		define: {
+			CDB_CONVERTER_VERSION: JSON.stringify(version),
+		},
 		outExtension() {
 			return { js: ".mjs" };
 		},
