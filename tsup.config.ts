@@ -17,4 +17,18 @@ export default defineConfig([
 		sourcemap: false,
 		minify: false,
 	},
+	{
+		entry: {
+			cli: "src/cli.ts",
+		},
+		format: ["esm"],
+		dts: false,
+		shims: true,
+		clean: false,
+		outExtension() {
+			return { js: ".mjs" };
+		},
+		sourcemap: false,
+		minify: false,
+	},
 ]);
