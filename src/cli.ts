@@ -139,7 +139,7 @@ async function convert(
 
 			outputBytes = db.export();
 		} finally {
-			db.close?.();
+			db.close();
 		}
 	} else {
 		const db = new SQL.Database(inputBytes);
@@ -147,7 +147,7 @@ async function convert(
 		try {
 			outputBytes = new Uint8Array(sqlToCdb(db));
 		} finally {
-			db.close?.();
+			db.close();
 		}
 	}
 
