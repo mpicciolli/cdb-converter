@@ -55,8 +55,15 @@ function parseColumnMetadata(colName: string, colType: string): ColumnMetadata {
  * @returns Compressed CDB binary data (ArrayBuffer)
  */
 export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
+	const structureInfo = db.exec(`PRAGMA table_info("DB_STRUCTURE")`);
+	const hasFlagsColumn =
+		structureInfo.length > 0 &&
+		structureInfo[0].values.some((row) => row[1] === "Flags");
+
 	const tablesResult = db.exec(
-		`SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID`,
+		hasFlagsColumn
+			? `SELECT TableName, ID, Flags FROM DB_STRUCTURE ORDER BY ID`
+			: `SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID`,
 	);
 	if (tablesResult.length === 0) {
 		throw new Error("No DB_STRUCTURE table found");
@@ -65,10 +72,8 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 	const tables = tablesResult[0].values.map((row) => ({
 		name: row[0] as string,
 		id: row[1] as number,
+		flags: hasFlagsColumn ? (row[2] as number | null) : null,
 	}));
-
-	// Use in-memory table flags map if available, otherwise fall back to hardcoded values
-	const tableFlagsMap = db._tableFlagsMap || new Map<number, number>();
 
 	const estimatedSize = db.export().length;
 	const writer = new CDBWriter(estimatedSize);
@@ -113,8 +118,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 		writer.writeChunkClose();
 
 		writer.writeChunkOpen(CHUNK_TYPE.TABLE_FLAGS);
-		const tableFlags =
-			tableFlagsMap.get(tableInfo.id) ?? TABLE_FLAGS_BY_ID[tableInfo.id] ?? 0;
+		const tableFlags = tableInfo.flags ?? TABLE_FLAGS_BY_ID[tableInfo.id] ?? 0;
 		writer.write32(tableFlags);
 		writer.writeChunkClose();
 
