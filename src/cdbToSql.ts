@@ -39,18 +39,18 @@ export function cdbToSql(
 	// DB_STRUCTURE mirrors the PCM convention used by sqlToCdb: TableName keeps the
 	// literal type annotation '274' so the schema matches the metadata table shape
 	// expected by round-trip consumers, while only the table rows are read back.
-	db.run(`CREATE TABLE DB_STRUCTURE (TableName TEXT '274', ID INTEGER)`);
-
-	// Store TABLE_FLAGS in memory (attached to db object, not in SQLite)
-	const tableFlagsMap = new Map<number, number>();
-	db._tableFlagsMap = tableFlagsMap;
+	// Flags persists each table's TABLE_FLAGS into the SQLite file so it survives an
+	// export()/reopen round-trip (its meaning is unknown but must be preserved).
+	db.run(
+		`CREATE TABLE DB_STRUCTURE (TableName TEXT '274', ID INTEGER, Flags INTEGER)`,
+	);
 
 	tables.forEach((table) => {
-		db.run(`INSERT INTO DB_STRUCTURE VALUES (?, ?)`, [
+		db.run(`INSERT INTO DB_STRUCTURE VALUES (?, ?, ?)`, [
 			table.name,
 			table.tableId,
+			table.tableFlags,
 		]);
-		tableFlagsMap.set(table.tableId, table.tableFlags);
 		const escapedTableName = escapeSqlIdentifier(table.name);
 
 		// Keep columns in original file order (do NOT sort)

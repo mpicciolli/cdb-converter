@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { cdbToSql, sqlToCdb } from "../src/index";
+import { cdbToSql } from "../src/index";
 import type { SqlJsStatic } from "../src/types";
 
 vi.mock("../src/compression", () => ({
@@ -35,7 +35,6 @@ function createMockSqlJs(): SqlJsStatic & {
 		Database: class MockDatabase {
 			tables: Map<string, { rows: unknown[][] }> = new Map();
 			sqlOperations: Array<{ sql: string; params?: unknown[] }> = [];
-			_tableFlagsMap?: Map<number, number>;
 
 			constructor() {
 				createdDatabases.push(this as MockSqlDatabase);
@@ -149,25 +148,5 @@ describe("cdb/sql conversion surface", () => {
 		).toHaveLength(1);
 
 		mockReadChunk.mockReset();
-	});
-
-	it("exposes cdbToSql", () => {
-		expect(typeof cdbToSql).toBe("function");
-	});
-
-	it("exposes sqlToCdb", () => {
-		expect(typeof sqlToCdb).toBe("function");
-	});
-
-	it("keeps the mock database behavior usable for round-trip scaffolding", () => {
-		const sql = createMockSqlJs();
-		const mockDb = new sql.Database();
-		mockDb._tableFlagsMap = new Map([[10, 65]]);
-
-		mockDb.run("CREATE TABLE test (id INTEGER)");
-		mockDb.run("INSERT INTO test VALUES (?)", [42]);
-
-		const result = mockDb.exec("SELECT * FROM test");
-		expect(Array.isArray(result)).toBe(true);
 	});
 });
