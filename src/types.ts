@@ -73,9 +73,7 @@ export interface CDBChunk {
 
 export type ColumnData = Array<string | number | boolean>;
 
-export interface SqlDatabase extends Database {
-	_tableFlagsMap?: Map<number, number>;
-}
+export type SqlDatabase = Database;
 
 export interface ColumnMetadata {
 	sqliteType: string;
