@@ -55,8 +55,6 @@ function parseColumnMetadata(colName: string, colType: string): ColumnMetadata {
  * @returns Compressed CDB binary data (ArrayBuffer)
  */
 export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
-	// Older .sqlite files (created before flags were persisted) lack the Flags column;
-	// detect it so we can fall back to the hardcoded TABLE_FLAGS_BY_ID for those.
 	const structureInfo = db.exec(`PRAGMA table_info("DB_STRUCTURE")`);
 	const hasFlagsColumn =
 		structureInfo.length > 0 &&

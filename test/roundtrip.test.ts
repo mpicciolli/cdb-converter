@@ -55,7 +55,7 @@ function snapshot(db: SqlDatabase): TableSnapshot[] {
 			(col) => `${col[1] as string} :: ${col[2] as string}`,
 		);
 
-		const data = db.exec(`SELECT * FROM "${name}"`);
+		const data = db.exec(`SELECT * FROM "${name}" ORDER BY rowid`);
 		const rows = data.length > 0 ? data[0].values : [];
 
 		return { name, id, flags, columns, rows };

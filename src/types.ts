@@ -73,7 +73,7 @@ export interface CDBChunk {
 
 export type ColumnData = Array<string | number | boolean>;
 
-export type SqlDatabase = Database;
+export interface SqlDatabase extends Database {}
 
 export interface ColumnMetadata {
 	sqliteType: string;
