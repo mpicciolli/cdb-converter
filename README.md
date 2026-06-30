@@ -108,30 +108,13 @@ The CDB parser is format-driven, not version-specific, so it is not tied to a si
 Pro Cycling Manager release. Lossless round-trip conversion (`cdb → sqlite → cdb`) is
 tested against the official databases of:
 
-| Version | Status |
-| --------------------------- | ----------------- |
-| Pro Cycling Manager 2014    | ✅ tested          |
-| Pro Cycling Manager 2018    | ✅ tested          |
-| Pro Cycling Manager 2019    | ✅ tested          |
-| Pro Cycling Manager 2021    | ✅ tested          |
-| Pro Cycling Manager 2025    | ✅ tested          |
-
-Other versions using the same CDB chunk format are expected to work. A future version
-that introduces an unknown column data type will fail loudly during `sqlToCdb` rather
-than produce a corrupted file.
-
-### Runtimes
-
-- **Node.js** ≥ 22 (see `engines` in `package.json`)
-- **Browsers** — any modern browser (conversion runs through [sql.js](https://github.com/sql-js/sql.js))
-
-### SQLite file compatibility
-
-`.sqlite` files produced by older versions of this library (before table flags were
-persisted in `DB_STRUCTURE.Flags`) are still convertible: `sqlToCdb` falls back to its
-built-in flag table for files that lack the column. Conversely, `.sqlite` files produced
-by the current version remain readable by older versions, which simply ignore the extra
-column.
+| Version                  | Status    |
+| ------------------------ | --------- |
+| Pro Cycling Manager 2014 | ✅ tested |
+| Pro Cycling Manager 2018 | ✅ tested |
+| Pro Cycling Manager 2019 | ✅ tested |
+| Pro Cycling Manager 2021 | ✅ tested |
+| Pro Cycling Manager 2025 | ✅ tested |
 
 ## API Reference
 
