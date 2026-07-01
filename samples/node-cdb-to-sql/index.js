@@ -37,20 +37,26 @@ async function main() {
 	const SQL = await initSqlJs();
 	const cdbBytes = await readFile(inputPath);
 	const db = cdbToSql(cdbBytes, SQL);
-	const sqliteBytes = db.export();
+	try {
+		const sqliteBytes = db.export();
 
-	await mkdir(dirname(outputPath), { recursive: true });
-	await writeFile(outputPath, sqliteBytes);
+		await mkdir(dirname(outputPath), { recursive: true });
+		await writeFile(outputPath, sqliteBytes);
 
-	const tables = db.exec("SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID");
-	const rows = tables[0]?.values || [];
+		const tables = db.exec(
+			"SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID",
+		);
+		const rows = tables[0]?.values || [];
 
-	console.log(`Input  : ${inputPath}`);
-	console.log(`Output : ${outputPath}`);
-	console.log(`Tables : ${rows.length}`);
+		console.log(`Input  : ${inputPath}`);
+		console.log(`Output : ${outputPath}`);
+		console.log(`Tables : ${rows.length}`);
 
-	for (const [tableName, tableId] of rows) {
-		console.log(`- ${tableName} (#${tableId})`);
+		for (const [tableName, tableId] of rows) {
+			console.log(`- ${tableName} (#${tableId})`);
+		}
+	} finally {
+		db.close();
 	}
 }
 

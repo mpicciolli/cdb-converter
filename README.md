@@ -19,6 +19,30 @@ TypeScript library for converting Pro Cycling Manager CDB database files to/from
 npm install cdb-converter
 ```
 
+## CLI
+
+The package ships a `cdb-converter` command for converting files without writing any code. The conversion direction is auto-detected from the input file extension.
+
+```bash
+# Convert a CDB file to SQLite (default output: save.sqlite)
+npx cdb-converter save.cdb
+
+# Convert SQLite back to CDB (default output: save.cdb)
+npx cdb-converter save.sqlite
+
+# Provide an explicit output path
+npx cdb-converter save.cdb data/save.sqlite
+
+# Show help / version
+npx cdb-converter --help
+npx cdb-converter --version
+```
+
+| Input extension     | Direction        | Default output     |
+| ------------------- | ---------------- | ------------------ |
+| `.cdb`              | CDB → SQLite     | `<input>.sqlite`   |
+| `.sqlite` / `.db`   | SQLite → CDB     | `<input>.cdb`      |
+
 ## Samples
 
 Example projects are available in the [samples](./samples/) folder:
