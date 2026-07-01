@@ -9,14 +9,9 @@ This sample shows how to use `cdbToSql` in the browser with `sql.js`.
 - Display the detected tables from `DB_STRUCTURE`
 - Download the generated `.sqlite` file
 
-## Prerequisites
-
-- Install dependencies from the repository root: `npm install`
-- Build the library from the repository root: `npm run build`
-
 ## Run the sample
 
-Serve the repository root with any static HTTP server, then open `/samples/browser/` in your browser.
+Serve this folder with any static HTTP server, then open `/samples/browser/` in your browser.
 
 Example with VS Code Live Server or any equivalent local server:
 

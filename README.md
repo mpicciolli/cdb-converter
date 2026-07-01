@@ -137,7 +137,7 @@ const decompressed = decompressCdb(compressed); // accepts compressed or raw inp
 ```html
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.14.1/dist/sql-wasm.js"></script>
 <script type="module">
-  import { cdbToSql } from "https://cdn.jsdelivr.net/npm/cdb-converter/dist/index.mjs";
+  import { cdbToSql } from "https://cdn.jsdelivr.net/npm/cdb-converter/+esm";
 
   const SQL = await initSqlJs({
     locateFile: (file) =>
