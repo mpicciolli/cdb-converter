@@ -136,7 +136,7 @@ const decompressed = decompressCdb(compressed); // accepts compressed or raw inp
 ```html
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.14.1/dist/sql-wasm.js"></script>
 <script type="module">
-  import { cdbToSql } from "https://cdn.jsdelivr.net/npm/cdb-converter";
+  import { cdbToSql } from "https://cdn.jsdelivr.net/npm/cdb-converter/dist/index.mjs";
 
   const SQL = await initSqlJs({
     locateFile: (file) =>
@@ -200,7 +200,7 @@ The library uses a special `DB_STRUCTURE` table to round-trip CDB metadata that 
 
 ```sql
 CREATE TABLE DB_STRUCTURE (
-  TableName TEXT,
+  TableName TEXT '274',
   ID INTEGER,
   Flags INTEGER
 )
