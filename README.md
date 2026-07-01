@@ -139,7 +139,8 @@ const decompressed = decompressCdb(compressed); // accepts compressed or raw inp
   import { cdbToSql } from "https://cdn.jsdelivr.net/npm/cdb-converter";
 
   const SQL = await initSqlJs({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/sql.js@1.14.1/dist/${file}`,
+    locateFile: (file) =>
+      `https://cdn.jsdelivr.net/npm/sql.js@1.14.1/dist/${file}`,
   });
 
   // Read a CDB from a file input
@@ -182,16 +183,16 @@ Decompress CDB data, transparently handling both compressed and already-uncompre
 
 Every CDB data type is preserved during conversion:
 
-| Type            | Description       | Example         |
-| --------------- | ----------------- | --------------- |
-| `INTEGER`       | 32-bit signed     | `42`            |
-| `FLOAT`         | IEEE 754 float32  | `3.14`          |
-| `STRING`        | UTF-8 text        | `"cyclist"`     |
-| `BOOLEAN`       | Bit-packed        | `true` / `false`|
-| `INTEGER_BYTE`  | 8-bit signed      | `-128` to `127` |
-| `INTEGER_SHORT` | 16-bit unsigned   | `0` to `65535`  |
-| `FLOAT_LIST`    | Array of floats   | `(1.5,2.3,3.7)` |
-| `INTEGER_LIST`  | Array of integers | `(10,20,30)`    |
+| Type            | Description       | Example          |
+| --------------- | ----------------- | ---------------- |
+| `INTEGER`       | 32-bit signed     | `42`             |
+| `FLOAT`         | IEEE 754 float32  | `3.14`           |
+| `STRING`        | UTF-8 text        | `"cyclist"`      |
+| `BOOLEAN`       | Bit-packed        | `true` / `false` |
+| `INTEGER_BYTE`  | 8-bit signed      | `-128` to `127`  |
+| `INTEGER_SHORT` | 16-bit unsigned   | `0` to `65535`   |
+| `FLOAT_LIST`    | Array of floats   | `(1.5,2.3,3.7)`  |
+| `INTEGER_LIST`  | Array of integers | `(10,20,30)`     |
 
 ## How metadata is preserved
 
@@ -219,76 +220,13 @@ The CDB parser is **format-driven, not version-specific**, so it is not tied to 
 | Pro Cycling Manager 2021 | ✅ tested |
 | Pro Cycling Manager 2025 | ✅ tested |
 
-## API Reference
+## Samples
 
-### `cdbToSql(cdbBuffer: ArrayBuffer | Uint8Array, SQL: SqlJsStatic): Database`
+Runnable examples live in the [samples](./samples/) folder:
 
-Convert CDB binary data to SQLite database instance.
-
-You must pass the initialized `sql.js` module returned by `initSqlJs()`. This library does not initialize `sql.js` internally because that setup is asynchronous and environment-specific: the caller controls how the wasm file is loaded in Node.js or in the browser, and `cdbToSql` only needs the ready-to-use `Database` constructor exposed by that module.
-
-- **cdbBuffer**: Raw CDB binary data (compressed or uncompressed)
-- **SQL**: sql.js instance from `initSqlJs()`
-- **returns**: sql.js Database instance with CDB tables loaded
-
-### `sqlToCdb(db: Database): ArrayBuffer`
-
-Convert SQLite database back to CDB binary format (automatically compressed).
-
-- **db**: sql.js Database instance
-- **returns**: Compressed CDB binary data (ArrayBuffer)
-
-### `compressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer`
-
-Compress CDB data using zlib deflate.
-
-### `decompressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer`
-
-Decompress CDB data (handles both compressed and uncompressed input).
-
-## Metadata Preservation
-
-The library uses a special `DB_STRUCTURE` table to preserve CDB metadata:
-
-```sql
-CREATE TABLE DB_STRUCTURE (
-  TableName TEXT,
-  ID INTEGER,
-  Flags INTEGER
-)
-```
-
-Each table's flags (their meaning is unknown but must be preserved) are stored in the
-`Flags` column, so they are written into the `.sqlite` file itself and survive an
-`export()`/reopen cycle. Column indices and data types are encoded into each column's
-declared type annotation. Together this makes `cdb → sqlite → cdb` lossless even when the
-SQLite database is saved to disk and reopened in a separate process.
-
-## Browser Usage
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
-<script type="module">
-  import {
-    cdbToSql,
-    sqlToCdb,
-  } from "https://cdn.jsdelivr.net/npm/cdb-converter";
-
-  // Initialize sql.js
-  const SQL = await initSqlJs();
-
-  // Read CDB from file input
-  const file = document.getElementById("cdb-input").files[0];
-  const cdbBuffer = await file.arrayBuffer();
-
-  // Convert and use
-  const db = cdbToSql(cdbBuffer, SQL);
-  console.log(
-    "Tables:",
-    db.exec("SELECT * FROM sqlite_master WHERE type='table'"),
-  );
-</script>
-```
+- [Browser](./samples/browser/) — convert a `.cdb` file to SQLite directly in the browser.
+- [Node.js — CDB to SQLite](./samples/node-cdb-to-sql/) — convert a `.cdb` file into a `.sqlite` file.
+- [Node.js — SQLite to CDB](./samples/node-sql-to-cdb/) — convert a `.sqlite` or `.db` file back into a `.cdb` file.
 
 ## License
 
