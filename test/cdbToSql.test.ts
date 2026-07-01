@@ -1,10 +1,8 @@
-/**
- * CDB to SQLite conversion tests
- */
-
+import type { BindParams, QueryExecResult } from "sql.js";
 import { describe, expect, it, vi } from "vitest";
 import { cdbToSql } from "../src/index";
 import type { SqlJsStatic } from "../src/types";
+import { MockSqlDatabaseBase, MockStatement } from "./mocks/mockSqlDatabase";
 
 vi.mock("../src/compression", () => ({
 	decompressCdb: vi.fn((data: ArrayBuffer | Uint8Array) => data),
@@ -20,91 +18,95 @@ vi.mock("../src/reader", () => ({
 	},
 }));
 
-// Mock SqlJs for testing - would need actual sql.js in real tests
-
-type MockSqlDatabase = InstanceType<SqlJsStatic["Database"]> & {
-	sqlOperations: Array<{ sql: string; params?: unknown[] }>;
-};
+type MockSqlDatabase = MockDatabase;
 
 function createMockSqlJs(): SqlJsStatic & {
 	createdDatabases: MockSqlDatabase[];
 } {
 	const createdDatabases: MockSqlDatabase[] = [];
 
+	class MockDatabaseImpl extends MockDatabase {
+		constructor() {
+			super();
+			createdDatabases.push(this);
+		}
+	}
+
 	return {
-		Database: class MockDatabase {
-			tables: Map<string, { rows: unknown[][] }> = new Map();
-			sqlOperations: Array<{ sql: string; params?: unknown[] }> = [];
-
-			constructor() {
-				createdDatabases.push(this as MockSqlDatabase);
-			}
-
-			run(sql: string, params?: unknown[]): void {
-				this.sqlOperations.push({ sql, params });
-
-				if (sql.includes("CREATE TABLE")) {
-					const match = sql.match(/CREATE TABLE "?(\w+)"?/);
-					if (match) {
-						this.tables.set(match[1], { rows: [] });
-					}
-				} else if (sql.includes("INSERT INTO")) {
-					const match = sql.match(/INSERT INTO "?(\w+)"?/);
-					if (match) {
-						const table = this.tables.get(match[1]);
-						if (table && params) {
-							table.rows.push(params);
-						}
-					}
-				}
-			}
-
-			exec(sql: string): Array<{ columns: string[]; values: unknown[][] }> {
-				if (sql.includes("SELECT TableName, ID FROM DB_STRUCTURE")) {
-					return [
-						{
-							columns: ["TableName", "ID"],
-							values: [
-								["TestTable", 100],
-								["Teams", 10],
-							],
-						},
-					];
-				}
-
-				if (sql.includes("PRAGMA table_info")) {
-					return [
-						{
-							columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
-							values: [
-								[0, "id", "INTEGER 1600", 0, null, 0],
-								[1, "name", "TEXT 1602", 0, null, 0],
-							],
-						},
-					];
-				}
-
-				if (sql.includes("SELECT * FROM")) {
-					return [
-						{
-							columns: ["id", "name"],
-							values: [
-								[1, "Test1"],
-								[2, "Test2"],
-							],
-						},
-					];
-				}
-
-				return [];
-			}
-
-			export(): Uint8Array {
-				return new Uint8Array([0, 1, 2, 3]);
-			}
-		},
+		Database: MockDatabaseImpl,
+		Statement: MockStatement,
 		createdDatabases,
 	};
+}
+
+class MockDatabase extends MockSqlDatabaseBase {
+	tables: Map<string, { rows: unknown[][] }> = new Map();
+	sqlOperations: Array<{ sql: string; params?: BindParams }> = [];
+
+	override run(sql: string, params?: BindParams): this {
+		this.sqlOperations.push({ sql, params });
+
+		if (sql.includes("CREATE TABLE")) {
+			const match = sql.match(/CREATE TABLE "?(\w+)"?/);
+			if (match) {
+				this.tables.set(match[1], { rows: [] });
+			}
+		} else if (sql.includes("INSERT INTO")) {
+			const match = sql.match(/INSERT INTO "?(\w+)"?/);
+			if (match) {
+				const table = this.tables.get(match[1]);
+				if (table && Array.isArray(params)) {
+					table.rows.push(params);
+				}
+			}
+		}
+
+		return this;
+	}
+
+	override exec(sql: string): QueryExecResult[] {
+		if (sql.includes("SELECT TableName, ID FROM DB_STRUCTURE")) {
+			return [
+				{
+					columns: ["TableName", "ID"],
+					values: [
+						["TestTable", 100],
+						["Teams", 10],
+					],
+				},
+			];
+		}
+
+		if (sql.includes("PRAGMA table_info")) {
+			return [
+				{
+					columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+					values: [
+						[0, "id", "INTEGER 1600", 0, null, 0],
+						[1, "name", "TEXT 1602", 0, null, 0],
+					],
+				},
+			];
+		}
+
+		if (sql.includes("SELECT * FROM")) {
+			return [
+				{
+					columns: ["id", "name"],
+					values: [
+						[1, "Test1"],
+						[2, "Test2"],
+					],
+				},
+			];
+		}
+
+		return [];
+	}
+
+	override export(): Uint8Array {
+		return new Uint8Array([0, 1, 2, 3]);
+	}
 }
 
 describe("cdb/sql conversion surface", () => {

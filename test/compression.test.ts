@@ -1,7 +1,3 @@
-/**
- * Compression tests
- */
-
 import { describe, expect, it } from "vitest";
 import { compressCdb, decompressCdb } from "../src/compression";
 import { CDBReader } from "../src/reader";

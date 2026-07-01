@@ -1,7 +1,3 @@
-/**
- * CLI helper tests
- */
-
 import { describe, expect, it } from "vitest";
 import { detectDirection, getDefaultOutputPath, parseArgs } from "../src/cli";
 

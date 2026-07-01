@@ -1,15 +1,10 @@
-/**
- * SQLite to CDB conversion tests
- */
-
 import { describe, expect, it } from "vitest";
 import { sqlToCdb } from "../src/index";
-import type { SqlDatabase } from "../src/types";
+import { createMockSqlDatabase } from "./mocks/mockSqlDatabase";
 
-function createSqlToCdbMockDb(columnType: string): SqlDatabase {
-	return {
-		run: () => {},
-		exec: (sql: string) => {
+function createSqlToCdbMockDb(columnType: string) {
+	return createMockSqlDatabase({
+		exec: (sql) => {
 			if (sql.includes("DB_STRUCTURE")) {
 				return [{ columns: ["TableName", "ID"], values: [["DYN_team", 1]] }];
 			}
@@ -29,8 +24,7 @@ function createSqlToCdbMockDb(columnType: string): SqlDatabase {
 
 			return [{ columns: [], values: [] }];
 		},
-		export: () => new Uint8Array([0, 1, 2]),
-	};
+	});
 }
 
 describe("sql to cdb conversion surface", () => {
@@ -39,25 +33,22 @@ describe("sql to cdb conversion surface", () => {
 	});
 
 	it("throws when DB_STRUCTURE table is missing", () => {
-		const mockDb: SqlDatabase = {
-			run: () => {},
-			exec: (sql: string) => {
+		const mockDb = createMockSqlDatabase({
+			exec: (sql) => {
 				if (sql.includes("DB_STRUCTURE")) {
 					return [];
 				}
 
 				return [{ columns: [], values: [] }];
 			},
-			export: () => new Uint8Array([0, 1, 2]),
-		};
+		});
 
 		expect(() => sqlToCdb(mockDb)).toThrow(/DB_STRUCTURE/);
 	});
 
 	it("throws when schema information for a listed table is unavailable", () => {
-		const mockDb: SqlDatabase = {
-			run: () => {},
-			exec: (sql: string) => {
+		const mockDb = createMockSqlDatabase({
+			exec: (sql) => {
 				if (sql.includes("DB_STRUCTURE")) {
 					return [{ columns: ["TableName", "ID"], values: [["DYN_team", 1]] }];
 				}
@@ -68,8 +59,7 @@ describe("sql to cdb conversion surface", () => {
 
 				return [{ columns: [], values: [] }];
 			},
-			export: () => new Uint8Array([0, 1, 2]),
-		};
+		});
 
 		expect(() => sqlToCdb(mockDb)).toThrow(
 			/No schema information available for table "DYN_team"/,
