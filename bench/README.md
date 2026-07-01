@@ -4,29 +4,30 @@ Reproducible performance and size numbers for `cdb-converter`.
 
 ## Running
 
+The benchmarks run through [`vitest bench`](https://vitest.dev/guide/features.html#benchmarking), which handles warmup,
+iteration counts and statistics (mean, p99, ops/sec, margin of error) automatically. They
+import from `src/`, so no build step is required.
+
 ```bash
-npm run build        # bench imports from dist/
-npm run bench        # text output over all official fixtures
-npm run bench -- --md              # Markdown table (used below)
-npm run bench -- --iterations 20   # more iterations
-npm run bench -- path/to/save.cdb  # a specific CDB file
+npm run bench                          # all official fixtures
+npm run bench -- --outputJson out.json # machine-readable results
 ```
 
-The script runs a warmup, then reports the **median** of N timed iterations, so a single
-cold outlier (JIT warm-up, sql.js/WASM init) does not skew the result.
+Each case is warmed up before timing, so a cold outlier (JIT warm-up, sql.js/WASM init)
+does not skew the result.
 
 ## Conversion performance
 
-Round-trip timings against the official Pro Cycling Manager databases, median of 10
-iterations after warmup.
+Round-trip timings against the official Pro Cycling Manager databases (`mean` reported by
+`vitest bench`).
 
 | Fixture                  | Input (CDB) | Tables |   Rows | cdbToSql | sqlToCdb | Round-trip |
 | ------------------------ | ----------: | -----: | -----: | -------: | -------: | ---------: |
 | OfficialRelease-2014.cdb |      355 kB |    136 | 31,741 | 131.7 ms | 119.6 ms |   251.3 ms |
 | OfficialRelease-2018.cdb |      566 kB |    150 | 62,127 | 167.8 ms | 198.5 ms |   366.3 ms |
-| OfficialRelease-2019.cdb |      610 kB |    158 | 64,560 | 179.5 ms | 210.0 ms |   389.5 ms |
-| OfficialRelease-2021.cdb |      417 kB |    147 | 36,672 | 133.6 ms | 130.7 ms |   264.3 ms |
-| OfficialRelease-2025.cdb |      441 kB |    149 | 34,691 | 140.5 ms | 145.7 ms |   286.2 ms |
+| OfficialRelease-2019.cdb |      610 kB |    158 | 64,560 | 177.2 ms | 210.0 ms |   387.2 ms |
+| OfficialRelease-2021.cdb |      417 kB |    147 | 36,672 | 133.1 ms | 128.1 ms |   261.2 ms |
+| OfficialRelease-2025.cdb |      441 kB |    149 | 34,691 | 145.3 ms | 144.8 ms |   290.1 ms |
 
 - **cdbToSql** — decompress + parse the CDB binary into an in-memory SQLite database.
 - **sqlToCdb** — serialize the SQLite database back to compressed CDB bytes.
