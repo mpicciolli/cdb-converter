@@ -67,11 +67,5 @@
 	},
 	"engines": {
 		"node": ">=22.0.0"
-	},
-	"lint-staged": {
-		"src/**/*.ts": [
-			"biome format --write",
-			"biome lint --write"
-		]
 	}
 }

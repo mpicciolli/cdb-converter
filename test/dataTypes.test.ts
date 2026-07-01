@@ -1,7 +1,3 @@
-/**
- * Data types tests
- */
-
 import { describe, expect, it } from "vitest";
 
 describe("data type helpers", () => {
