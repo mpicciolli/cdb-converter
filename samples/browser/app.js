@@ -1,4 +1,4 @@
-import { cdbToSql } from "./dist/index.mjs";
+import { cdbToSql } from "https://cdn.jsdelivr.net/npm/cdb-converter/+esm";
 
 const fileInput = document.querySelector("#cdb-file");
 const dropzoneCopy = document.querySelector("#dropzone-copy");
