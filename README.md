@@ -26,6 +26,7 @@ The conversion is **lossless**: a full `cdb → sqlite → cdb` round-trip prese
 - [Supported data types](#supported-data-types)
 - [How metadata is preserved](#how-metadata-is-preserved)
 - [Compatibility](#compatibility)
+- [Performance & size](#performance--size)
 - [Samples](#samples)
 
 ## Features
@@ -219,6 +220,12 @@ The CDB parser is **format-driven, not version-specific**, so it is not tied to 
 | Pro Cycling Manager 2019 | ✅ tested |
 | Pro Cycling Manager 2021 | ✅ tested |
 | Pro Cycling Manager 2025 | ✅ tested |
+
+## Performance & size
+
+A full `cdb → sqlite → cdb` round-trip on a real ~60k-row database stays well under half a second, and the library's own code adds only **~28 kB** — the SQLite WASM runtime is the real weight, and you would pay for it with any SQLite-in-JS approach.
+
+See **[bench/README.md](bench/README.md)** for the full per-fixture numbers, the bundle breakdown, and how to reproduce them (`npm run bench`).
 
 ## Samples
 
