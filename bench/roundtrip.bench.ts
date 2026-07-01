@@ -28,21 +28,13 @@ for (const path of FIXTURES) {
 	const cdbBytes = readFileSync(path);
 
 	describe(basename(path), () => {
-		// cdbToSql builds a fresh database each run; close it afterwards so the
-		// sql.js/WASM heap does not grow across iterations.
-		let toSqlDb: ReturnType<typeof cdbToSql> | undefined;
-		bench(
-			"cdbToSql",
-			() => {
-				toSqlDb = cdbToSql(cdbBytes, SQL);
-			},
-			{
-				teardown: () => {
-					toSqlDb?.close();
-					toSqlDb = undefined;
-				},
-			},
-		);
+		// cdbToSql builds a fresh database each run. vitest's setup/teardown are
+		// per-cycle (not per-iteration) hooks, so we close the database inside the
+		// timed function to keep the sql.js/WASM heap from growing across
+		// iterations. close() is negligible next to the parse it measures.
+		bench("cdbToSql", () => {
+			cdbToSql(cdbBytes, SQL).close();
+		});
 
 		// export and sqlToCdb are read-only on the database, so a single instance
 		// can be reused across iterations.
