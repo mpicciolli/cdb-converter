@@ -1,11 +1,11 @@
-// Reproducible round-trip benchmarks for cdb-converter, driven by `vitest bench`
-// (tinybench under the hood). Vitest handles warmup, iteration counts and
-// statistics (mean, p99, ops/sec, margin of error) for us.
+// Reproducible round-trip benchmarks for cdb-converter
 //
 // Measures, per fixture:
-//   - cdbToSql : decompress + parse CDB -> in-memory SQLite
-//   - export   : sql.js db.export() (SQLite -> bytes)
-//   - sqlToCdb : SQLite -> compressed CDB bytes
+//   - cdbToSql                     : decompress + parse CDB -> in-memory SQLite
+//   - cdbToSql (normalize)         : same, plus reconstructed PK/FK constraints
+//   - cdbToSql (normalize+fkIndex) : same, plus an index on every FK column
+//   - export                       : sql.js db.export() (SQLite -> bytes)
+//   - sqlToCdb                     : SQLite -> compressed CDB bytes
 //
 
 import { readFileSync } from "node:fs";
@@ -34,6 +34,17 @@ for (const path of FIXTURES) {
 		// iterations. close() is negligible next to the parse it measures.
 		bench("cdbToSql", () => {
 			cdbToSql(cdbBytes, SQL).close();
+		});
+
+		bench("cdbToSql (normalize)", () => {
+			cdbToSql(cdbBytes, SQL, { normalize: true }).close();
+		});
+
+		bench("cdbToSql (normalize+fkIndex)", () => {
+			cdbToSql(cdbBytes, SQL, {
+				normalize: true,
+				indexForeignKeys: true,
+			}).close();
 		});
 
 		// export and sqlToCdb are read-only on the database, so a single instance

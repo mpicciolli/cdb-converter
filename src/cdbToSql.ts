@@ -4,12 +4,92 @@
 
 import type { SqlValue } from "sql.js";
 import { decompressCdb } from "./compression";
+import { inferKeys } from "./keyInference";
+import type { TableKeys } from "./keyInference";
 import { CDBReader } from "./reader";
 import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
-import type { SqlDatabase, SqlJsStatic, TableInfo } from "./types";
+import type {
+	CdbToSqlOptions,
+	SqlDatabase,
+	SqlJsStatic,
+	TableInfo,
+} from "./types";
 
 function escapeSqlIdentifier(identifier: string): string {
 	return identifier.replace(/"/g, '""');
+}
+
+/** True when every value in the column is non-null and distinct (safe as a PK). */
+function isUniqueNonNull(data: unknown[]): boolean {
+	const seen = new Set<unknown>();
+	for (const value of data) {
+		if (value === null || value === undefined) return false;
+		if (seen.has(value)) return false;
+		seen.add(value);
+	}
+	return true;
+}
+
+/**
+ * Given a table's base column definitions and its inferred keys, produce the
+ * final `CREATE TABLE` body — with PK/FK constraints appended after the columns
+ * so the encoded type strings and column order stay intact — plus any index
+ * statements to run once every table exists and its rows are inserted.
+ *
+ * Constraints are only appended; a table with no inferred keys is returned
+ * unchanged.
+ */
+function buildTableConstraints(
+	table: TableInfo,
+	keys: TableKeys | undefined,
+	columnDefs: string,
+	escapedTableName: string,
+	options: CdbToSqlOptions | undefined,
+): { tableBody: string; indexes: string[] } {
+	if (!keys) return { tableBody: columnDefs, indexes: [] };
+
+	const constraints: string[] = [];
+	const indexes: string[] = [];
+
+	if (keys.primaryKey) {
+		const pkColumn = table.columns.find((col) => col.name === keys.primaryKey);
+		if (pkColumn && isUniqueNonNull(pkColumn.data)) {
+			constraints.push(
+				`PRIMARY KEY ("${escapeSqlIdentifier(keys.primaryKey)}")`,
+			);
+		} else if (pkColumn) {
+			indexes.push(
+				`CREATE INDEX IF NOT EXISTS "${escapeSqlIdentifier(
+					`${table.name}__${keys.primaryKey}_pk_idx`,
+				)}" ON "${escapedTableName}" ("${escapeSqlIdentifier(
+					keys.primaryKey,
+				)}")`,
+			);
+		}
+	}
+
+	for (const fk of keys.foreignKeys) {
+		constraints.push(
+			`FOREIGN KEY ("${escapeSqlIdentifier(fk.column)}") REFERENCES ` +
+				`"${escapeSqlIdentifier(fk.refTable)}" ("${escapeSqlIdentifier(
+					fk.refColumn,
+				)}")`,
+		);
+		if (options?.indexForeignKeys) {
+			indexes.push(
+				`CREATE INDEX IF NOT EXISTS "${escapeSqlIdentifier(
+					`${table.name}__${fk.column}_fk_idx`,
+				)}" ON "${escapedTableName}" ("${escapeSqlIdentifier(fk.column)}")`,
+			);
+		}
+	}
+
+	const tableBody =
+		constraints.length > 0
+			? `${columnDefs}, ${constraints.join(", ")}`
+			: columnDefs;
+
+	return { tableBody, indexes };
 }
 
 /**
@@ -21,6 +101,7 @@ function escapeSqlIdentifier(identifier: string): string {
 export function cdbToSql(
 	cdbData: ArrayBuffer | Uint8Array,
 	SQL: SqlJsStatic,
+	options?: CdbToSqlOptions,
 ): SqlDatabase {
 	const decompressedData = decompressCdb(cdbData);
 	const reader = new CDBReader(decompressedData);
@@ -44,6 +125,9 @@ export function cdbToSql(
 	db.run(
 		`CREATE TABLE DB_STRUCTURE (TableName TEXT '274', ID INTEGER, Flags INTEGER)`,
 	);
+
+	const keyMap = options?.normalize ? inferKeys(tables) : null;
+	const deferredIndexes: string[] = [];
 
 	tables.forEach((table) => {
 		db.run(`INSERT INTO DB_STRUCTURE VALUES (?, ?, ?)`, [
@@ -81,7 +165,16 @@ export function cdbToSql(
 			})
 			.join(", ");
 
-		db.run(`CREATE TABLE "${escapedTableName}" (${columnDefs})`);
+		const { tableBody, indexes } = buildTableConstraints(
+			table,
+			keyMap?.get(table.name),
+			columnDefs,
+			escapedTableName,
+			options,
+		);
+		deferredIndexes.push(...indexes);
+
+		db.run(`CREATE TABLE "${escapedTableName}" (${tableBody})`);
 
 		// Insert rows in batches (SQLite limit: 999 variables)
 		if (table.rowCount > 0) {
@@ -107,6 +200,10 @@ export function cdbToSql(
 			}
 		}
 	});
+
+	for (const indexStatement of deferredIndexes) {
+		db.run(indexStatement);
+	}
 
 	return db;
 }

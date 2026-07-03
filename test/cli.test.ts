@@ -21,11 +21,42 @@ describe("parseArgs", () => {
 			command: "convert",
 			input: "save.cdb",
 			output: undefined,
+			normalize: false,
+			indexForeignKeys: false,
 		});
 		expect(parseArgs(["save.cdb", "out.sqlite"])).toEqual({
 			command: "convert",
 			input: "save.cdb",
 			output: "out.sqlite",
+			normalize: false,
+			indexForeignKeys: false,
+		});
+	});
+
+	it("parses the --normalize / -n flag regardless of position", () => {
+		expect(parseArgs(["save.cdb", "out.sqlite", "--normalize"])).toEqual({
+			command: "convert",
+			input: "save.cdb",
+			output: "out.sqlite",
+			normalize: true,
+			indexForeignKeys: false,
+		});
+		expect(parseArgs(["-n", "save.cdb"])).toEqual({
+			command: "convert",
+			input: "save.cdb",
+			output: undefined,
+			normalize: true,
+			indexForeignKeys: false,
+		});
+	});
+
+	it("treats --index-fk as implying --normalize", () => {
+		expect(parseArgs(["save.cdb", "out.sqlite", "--index-fk"])).toEqual({
+			command: "convert",
+			input: "save.cdb",
+			output: "out.sqlite",
+			normalize: true,
+			indexForeignKeys: true,
 		});
 	});
 
@@ -34,6 +65,8 @@ describe("parseArgs", () => {
 			command: "convert",
 			input: undefined,
 			output: undefined,
+			normalize: false,
+			indexForeignKeys: false,
 		});
 	});
 });

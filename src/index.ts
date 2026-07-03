@@ -8,8 +8,11 @@ export { sqlToCdb } from "./sqlToCdb";
 export { compressCdb, decompressCdb } from "./compression";
 export { CDBReader } from "./reader";
 export { CDBWriter } from "./writer";
+export { inferKeys } from "./keyInference";
 
+export type { ForeignKey, TableKeys } from "./keyInference";
 export type {
+	CdbToSqlOptions,
 	ChunkHeader,
 	ColumnData,
 	ColumnInfo,

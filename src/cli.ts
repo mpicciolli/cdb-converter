@@ -18,6 +18,8 @@ export interface ParsedArgs {
 	command: "convert" | "help" | "version";
 	input?: string;
 	output?: string;
+	normalize?: boolean;
+	indexForeignKeys?: boolean;
 }
 
 const HELP_TEXT = `cdb-converter — convert Pro Cycling Manager CDB files to/from SQLite
@@ -38,14 +40,23 @@ Arguments:
 Options:
   -h, --help         Show this help message
   -v, --version      Show the cdb-converter version
+  -n, --normalize    (cdb -> sqlite only) reconstruct PRIMARY KEY / FOREIGN KEY
+                     constraints from PCM naming conventions for a normalized
+                     schema. Ignored when converting sqlite -> cdb.
+      --index-fk     (implies --normalize) also index every foreign-key column
+                     for faster JOINs. Roughly doubles the output size.
 
 Examples:
   cdb-converter save.cdb
   cdb-converter save.cdb save.sqlite
+  cdb-converter save.cdb save.sqlite --normalize
+  cdb-converter save.cdb save.sqlite --normalize --index-fk
   cdb-converter save.sqlite save.cdb`;
 
 export function parseArgs(argv: string[]): ParsedArgs {
 	const positionals: string[] = [];
+	let normalize = false;
+	let indexForeignKeys = false;
 
 	for (const arg of argv) {
 		if (arg === "-h" || arg === "--help") {
@@ -54,6 +65,16 @@ export function parseArgs(argv: string[]): ParsedArgs {
 		if (arg === "-v" || arg === "--version") {
 			return { command: "version" };
 		}
+		if (arg === "-n" || arg === "--normalize") {
+			normalize = true;
+			continue;
+		}
+		if (arg === "--index-fk") {
+			// --index-fk implies --normalize (indexes are only meaningful there).
+			normalize = true;
+			indexForeignKeys = true;
+			continue;
+		}
 		positionals.push(arg);
 	}
 
@@ -61,6 +82,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
 		command: "convert",
 		input: positionals[0],
 		output: positionals[1],
+		normalize,
+		indexForeignKeys,
 	};
 }
 
@@ -106,6 +129,8 @@ export function getDefaultOutputPath(
 async function convert(
 	input: string,
 	output: string | undefined,
+	normalize: boolean,
+	indexForeignKeys: boolean,
 ): Promise<void> {
 	const direction = detectDirection(input);
 	const inputPath = resolve(process.cwd(), input);
@@ -121,14 +146,20 @@ async function convert(
 	let summary: string[] = [];
 
 	if (direction === "cdb-to-sql") {
-		const db = cdbToSql(inputBytes, SQL);
+		const db = cdbToSql(inputBytes, SQL, { normalize, indexForeignKeys });
 
 		try {
 			const tables = db.exec(
 				"SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID",
 			);
 			const rows = tables[0]?.values ?? [];
-			summary = [`Tables : ${rows.length}`];
+			summary = [
+				`Tables : ${rows.length}`,
+				`Normalized : ${normalize ? "yes" : "no"}`,
+			];
+			if (normalize && indexForeignKeys) {
+				summary.push("FK indexes : yes");
+			}
 
 			outputBytes = db.export();
 		} finally {
@@ -175,7 +206,12 @@ export async function run(argv: string[]): Promise<void> {
 	}
 
 	try {
-		await convert(parsed.input, parsed.output);
+		await convert(
+			parsed.input,
+			parsed.output,
+			parsed.normalize ?? false,
+			parsed.indexForeignKeys ?? false,
+		);
 	} catch (error) {
 		console.error(`Error: ${error instanceof Error ? error.message : error}`);
 		process.exitCode = 1;

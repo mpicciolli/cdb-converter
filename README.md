@@ -7,7 +7,7 @@
 
 Convert **Pro Cycling Manager CDB** database files to and from SQLite, straight from the command line or your own code. Lightweight, isomorphic (Node.js **and** the browser), and zero-configuration.
 
-The conversion is **lossless**: a full `cdb → sqlite → cdb` round-trip preserves every table, column, data type, and flag — so you can edit a save in any SQLite tool and load it back into the game.
+The conversion is **lossless**: a full `cdb → sqlite → cdb` round-trip preserves every table, column, data type, and flag — so you can edit a save in any SQLite tool and load it back into the game. Optionally, it can reconstruct the save's relationships as real `PRIMARY KEY` / `FOREIGN KEY` constraints, turning the export into a normalized database you can explore with JOINs and ER-diagram tools.
 
 > [!NOTE]
 > Based on [agfor/pcmdbedit](https://github.com/agfor/pcmdbedit/) — many thanks to agfor for the foundational work.
@@ -19,6 +19,7 @@ The conversion is **lossless**: a full `cdb → sqlite → cdb` round-trip prese
 - [Command line](#command-line)
 - [Library usage](#library-usage)
   - [CDB to SQLite](#cdb-to-sqlite)
+  - [Normalized schema](#normalized-schema)
   - [SQLite to CDB](#sqlite-to-cdb)
   - [Compression](#compression)
   - [Browser](#browser)
@@ -34,6 +35,7 @@ The conversion is **lossless**: a full `cdb → sqlite → cdb` round-trip prese
 - **CDB ↔ SQLite** — convert between the binary CDB format and standard SQLite databases.
 - **CLI included** — convert files without writing any code; direction is auto-detected.
 - **Lossless round-trip** — table flags, column order, and data types survive an export/reopen cycle.
+- **Optional relational schema** — reconstruct `PRIMARY KEY` / `FOREIGN KEY` constraints for JOINs and ER diagrams, without breaking the round-trip.
 - **Isomorphic** — runs in Node.js and in the browser via [sql.js](https://github.com/sql-js/sql.js).
 - **Lightweight** — the library's own code is ~28 kB, with only `pako` and `sql.js` as dependencies.
 - **TypeScript-first** — native type definitions and full IDE support.
@@ -68,6 +70,9 @@ npx cdb-converter save.sqlite
 # Provide an explicit output path (directories are created as needed)
 npx cdb-converter save.cdb data/save.sqlite
 
+# Reconstruct PRIMARY KEY / FOREIGN KEY constraints (CDB → SQLite only)
+npx cdb-converter save.cdb save.sqlite --normalize
+
 # Help / version
 npx cdb-converter --help
 npx cdb-converter --version
@@ -77,6 +82,11 @@ npx cdb-converter --version
 | ----------------- | ------------ | ---------------- |
 | `.cdb`            | CDB → SQLite | `<input>.sqlite` |
 | `.sqlite` / `.db` | SQLite → CDB | `<input>.cdb`    |
+
+| Option              | Effect                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| `-n`, `--normalize` | (CDB → SQLite only) reconstruct PK/FK constraints from PCM naming conventions. See [Normalized schema](#normalized-schema). |
+| `--index-fk`        | Implies `--normalize`; also indexes every FK column for faster JOINs (roughly doubles output size). |
 
 ## Library usage
 
@@ -103,6 +113,36 @@ fs.writeFileSync("save.sqlite", db.export());
 
 > [!IMPORTANT]
 > You must pass the initialized `sql.js` module returned by `initSqlJs()`. This library does not initialize `sql.js` for you: that setup is asynchronous and environment-specific (the caller decides how the wasm file is loaded in Node.js or the browser).
+
+### Normalized schema
+
+By default the SQLite output is a flat mirror of the CDB tables, with no relational constraints. Pass `{ normalize: true }` to reconstruct `PRIMARY KEY` and `FOREIGN KEY` constraints from the PCM naming conventions (`ID{table}` identity columns and `fkID{target}` references), turning the export into a proper relational database — ready for JOINs, entity-relationship diagrams, and schema introspection tools.
+
+```typescript
+const db = cdbToSql(cdbBuffer, SQL, { normalize: true });
+
+// Relationships are now navigable:
+db.exec(`
+  SELECT c.gene_sz_name, t.gene_sz_name
+  FROM DYN_cyclist c
+  JOIN DYN_team t ON c.fkIDteam = t.IDteam
+`);
+```
+
+Notes:
+
+- **Round-trip safe.** Constraints are declarative metadata only; `sqlToCdb` ignores them, so a normalized database still converts back to a byte-identical CDB. The flag is only meaningful in the CDB → SQLite direction.
+- **Foreign keys are not enforced.** `PRAGMA foreign_keys` is left OFF so orphaned references (common in real saves) never block the conversion.
+- **Best-effort.** Columns whose relationship cannot be inferred simply get no constraint. Primary keys are downgraded to a plain index when the data is not unique.
+- **Foreign-key indexes are opt-in.** Pass `{ normalize: true, indexForeignKeys: true }` to also index every FK column for faster JOINs. These indexes roughly double the output size and conversion time, so `normalize` alone leaves them out — the schema is fully relational either way.
+
+```typescript
+// Lean: constraints only (~+40% size)
+cdbToSql(cdbBuffer, SQL, { normalize: true });
+
+// Heavier, faster JOINs: also index FK columns (~2x size)
+cdbToSql(cdbBuffer, SQL, { normalize: true, indexForeignKeys: true });
+```
 
 ### SQLite to CDB
 
@@ -155,12 +195,14 @@ const decompressed = decompressCdb(compressed); // accepts compressed or raw inp
 
 ## API reference
 
-### `cdbToSql(cdbBuffer, SQL): Database`
+### `cdbToSql(cdbBuffer, SQL, options?): Database`
 
 Convert CDB binary data into a SQLite database instance.
 
 - **`cdbBuffer`** — `ArrayBuffer | Uint8Array`, raw CDB data (compressed or uncompressed).
 - **`SQL`** — `SqlJsStatic`, the module returned by `initSqlJs()`.
+- **`options.normalize`** — `boolean` (default `false`). Reconstruct PK/FK constraints from PCM naming conventions. See [Normalized schema](#normalized-schema).
+- **`options.indexForeignKeys`** — `boolean` (default `false`). When normalizing, also index every FK column for faster JOINs (roughly doubles the output size).
 - **returns** — a `sql.js` `Database` with the CDB tables loaded.
 
 ### `sqlToCdb(db): ArrayBuffer`
@@ -224,6 +266,14 @@ The CDB parser is **format-driven, not version-specific**, so it is not tied to 
 ## Performance & size
 
 A full `cdb → sqlite → cdb` round-trip on a real ~60k-row database stays well under half a second, and the library's own code adds only **~28 kB** — the SQLite WASM runtime is the real weight, and you would pay for it with any SQLite-in-JS approach.
+
+Normalization is opt-in and costs only what you ask for (measured against the default conversion, ~60k rows):
+
+| Mode                                          | Conversion time | Output size |
+| --------------------------------------------- | --------------- | ----------- |
+| Default (flat)                                | baseline        | baseline    |
+| `normalize`                                   | +~10%           | +~40%       |
+| `normalize` + `indexForeignKeys`              | +~40%           | +~130%      |
 
 See **[bench/README.md](bench/README.md)** for the full per-fixture numbers, the bundle breakdown, and how to reproduce them (`npm run bench`).
 
