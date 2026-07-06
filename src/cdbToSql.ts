@@ -45,6 +45,8 @@ function buildTableConstraints(
 	columnDefs: string,
 	escapedTableName: string,
 	options: CdbToSqlOptions | undefined,
+	tablesByName: Map<string, TableInfo>,
+	keyMap: Map<string, TableKeys> | null,
 ): { tableBody: string; indexes: string[] } {
 	if (!keys) return { tableBody: columnDefs, indexes: [] };
 
@@ -69,12 +71,28 @@ function buildTableConstraints(
 	}
 
 	for (const fk of keys.foreignKeys) {
-		constraints.push(
-			`FOREIGN KEY ("${escapeSqlIdentifier(fk.column)}") REFERENCES ` +
-				`"${escapeSqlIdentifier(fk.refTable)}" ("${escapeSqlIdentifier(
-					fk.refColumn,
-				)}")`,
-		);
+		// SQLite requires FK targets to be a PRIMARY KEY / UNIQUE column. If the
+		// referenced table's identity column wasn't unique/non-null it was
+		// downgraded to a plain index above, so emitting the constraint here
+		// would make the schema invalid the moment a consumer turns on
+		// `PRAGMA foreign_keys` or runs `PRAGMA foreign_key_check`.
+		const refTablePk = keyMap?.get(fk.refTable)?.primaryKey;
+		const refColumn = tablesByName
+			.get(fk.refTable)
+			?.columns.find((col) => col.name === fk.refColumn);
+		const refIsEnforcedPk =
+			refTablePk === fk.refColumn &&
+			refColumn !== undefined &&
+			isUniqueNonNull(refColumn.data);
+
+		if (refIsEnforcedPk) {
+			constraints.push(
+				`FOREIGN KEY ("${escapeSqlIdentifier(fk.column)}") REFERENCES ` +
+					`"${escapeSqlIdentifier(fk.refTable)}" ("${escapeSqlIdentifier(
+						fk.refColumn,
+					)}")`,
+			);
+		}
 		if (options?.indexForeignKeys) {
 			indexes.push(
 				`CREATE INDEX IF NOT EXISTS "${escapeSqlIdentifier(
@@ -106,6 +124,7 @@ export function cdbToSql(
 	const decompressedData = decompressCdb(cdbData);
 	const reader = new CDBReader(decompressedData);
 	const db = new SQL.Database() as SqlDatabase;
+	db.run("PRAGMA foreign_keys = OFF");
 
 	const wrapperChunk = reader.readChunk();
 	const wrapperChildren = wrapperChunk.children;
@@ -127,6 +146,7 @@ export function cdbToSql(
 	);
 
 	const keyMap = options?.normalize ? inferKeys(tables) : null;
+	const tablesByName = new Map(tables.map((t) => [t.name, t]));
 	const deferredIndexes: string[] = [];
 
 	tables.forEach((table) => {
@@ -171,6 +191,8 @@ export function cdbToSql(
 			columnDefs,
 			escapedTableName,
 			options,
+			tablesByName,
+			keyMap,
 		);
 		deferredIndexes.push(...indexes);
 

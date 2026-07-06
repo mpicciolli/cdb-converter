@@ -74,6 +74,33 @@ describe("cdbToSql normalize mode", () => {
 		}
 	});
 
+	it("only emits foreign keys that target an enforced primary key", () => {
+		const db = cdbToSql(bytes, SQL, { normalize: true }) as SqlDatabase;
+		try {
+			const tables = db
+				.exec(`SELECT TableName FROM DB_STRUCTURE`)[0]
+				.values.map((row) => row[0] as string);
+
+			for (const table of tables) {
+				const fks = db.exec(`PRAGMA foreign_key_list("${table}")`);
+				if (fks.length === 0) continue;
+
+				for (const [, , refTable, , refColumn] of fks[0].values) {
+					const refTablePk = db
+						.exec(`PRAGMA table_info("${refTable}")`)[0]
+						.values.filter((row) => row[1] === refColumn)
+						.map((row) => row[5]);
+					expect(
+						refTablePk,
+						`${table} -> ${refTable}.${refColumn} must reference a declared PRIMARY KEY`,
+					).toEqual([1]);
+				}
+			}
+		} finally {
+			db.close();
+		}
+	});
+
 	it("emits no foreign keys by default (backwards compatible)", () => {
 		const db = cdbToSql(bytes, SQL) as SqlDatabase;
 		try {
