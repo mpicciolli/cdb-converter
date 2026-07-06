@@ -45,8 +45,8 @@ function buildTableConstraints(
 	columnDefs: string,
 	escapedTableName: string,
 	options: CdbToSqlOptions | undefined,
-	tablesByName: Map<string, TableInfo>,
 	keyMap: Map<string, TableKeys> | null,
+	enforcedPkByTable: Map<string, boolean>,
 ): { tableBody: string; indexes: string[] } {
 	if (!keys) return { tableBody: columnDefs, indexes: [] };
 
@@ -55,7 +55,7 @@ function buildTableConstraints(
 
 	if (keys.primaryKey) {
 		const pkColumn = table.columns.find((col) => col.name === keys.primaryKey);
-		if (pkColumn && isUniqueNonNull(pkColumn.data)) {
+		if (pkColumn && enforcedPkByTable.get(table.name)) {
 			constraints.push(
 				`PRIMARY KEY ("${escapeSqlIdentifier(keys.primaryKey)}")`,
 			);
@@ -77,13 +77,9 @@ function buildTableConstraints(
 		// would make the schema invalid the moment a consumer turns on
 		// `PRAGMA foreign_keys` or runs `PRAGMA foreign_key_check`.
 		const refTablePk = keyMap?.get(fk.refTable)?.primaryKey;
-		const refColumn = tablesByName
-			.get(fk.refTable)
-			?.columns.find((col) => col.name === fk.refColumn);
 		const refIsEnforcedPk =
 			refTablePk === fk.refColumn &&
-			refColumn !== undefined &&
-			isUniqueNonNull(refColumn.data);
+			(enforcedPkByTable.get(fk.refTable) ?? false);
 
 		if (refIsEnforcedPk) {
 			constraints.push(
@@ -149,6 +145,22 @@ export function cdbToSql(
 	const tablesByName = new Map(tables.map((t) => [t.name, t]));
 	const deferredIndexes: string[] = [];
 
+	// Precomputed once per table so tables referenced by many FKs don't pay for
+	// a repeated O(rows) uniqueness scan of their PK column for every referencing FK.
+	const enforcedPkByTable = new Map<string, boolean>();
+	if (keyMap) {
+		for (const [tableName, keys] of keyMap) {
+			if (!keys.primaryKey) continue;
+			const pkColumn = tablesByName
+				.get(tableName)
+				?.columns.find((col) => col.name === keys.primaryKey);
+			enforcedPkByTable.set(
+				tableName,
+				pkColumn !== undefined && isUniqueNonNull(pkColumn.data),
+			);
+		}
+	}
+
 	tables.forEach((table) => {
 		db.run(`INSERT INTO DB_STRUCTURE VALUES (?, ?, ?)`, [
 			table.name,
@@ -191,8 +203,8 @@ export function cdbToSql(
 			columnDefs,
 			escapedTableName,
 			options,
-			tablesByName,
 			keyMap,
+			enforcedPkByTable,
 		);
 		deferredIndexes.push(...indexes);
 
