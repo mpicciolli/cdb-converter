@@ -145,8 +145,6 @@ export function cdbToSql(
 	const tablesByName = new Map(tables.map((t) => [t.name, t]));
 	const deferredIndexes: string[] = [];
 
-	// Precomputed once per table so tables referenced by many FKs don't pay for
-	// a repeated O(rows) uniqueness scan of their PK column for every referencing FK.
 	const enforcedPkByTable = new Map<string, boolean>();
 	if (keyMap) {
 		for (const [tableName, keys] of keyMap) {
