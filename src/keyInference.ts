@@ -61,8 +61,8 @@ const PREFIX_PRIORITY: Record<string, number> = {
 
 /**
  * Leading modifiers stripped from a foreign-key suffix before retrying
- * resolution, possibly agglutinated (e.g. `fkIDoldteam` -> `IDteam`,
- * `fkIDu23team` -> `IDteam`, `fkIDprevious_simulate_status` -> simulate_status).
+ * resolution, possibly agglutinated (e.g. `fkIDoldteam` -> `team`,
+ * `fkIDu23team` -> `team`, `fkIDprevious_simulate_status` -> simulate_status).
  */
 const FK_MODIFIERS = [
 	"old",
