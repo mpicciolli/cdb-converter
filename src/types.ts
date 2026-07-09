@@ -1,7 +1,3 @@
-/**
- * Shared TypeScript types and interfaces for CDB converter library
- */
-
 import type { Database } from "sql.js";
 
 export type { SqlJsStatic } from "sql.js";
@@ -79,4 +75,25 @@ export interface ColumnMetadata {
 	sqliteType: string;
 	cdbDataType: DataType;
 	cdbColumnIndex: number;
+}
+
+export interface CdbToSqlOptions {
+	/**
+	 * Reconstruct PRIMARY KEY / FOREIGN KEY constraints from the PCM save naming
+	 * conventions, producing a normalized SQLite schema. Off by default.
+	 *
+	 * Foreign keys are declarative only (`PRAGMA foreign_keys` stays OFF) and are
+	 * ignored by `sqlToCdb`, so the round-trip back to CDB is unaffected.
+	 */
+	normalize?: boolean;
+
+	/**
+	 * Also create an index on every reconstructed foreign-key column, to speed up
+	 * relationship navigation / JOINs. Only applies when `normalize` is true.
+	 *
+	 * Off by default: these indexes account for the bulk of the normalized file
+	 * size (roughly doubling it) and conversion overhead. Enable it only when you
+	 * intend to run frequent filtered JOINs on the output.
+	 */
+	indexForeignKeys?: boolean;
 }

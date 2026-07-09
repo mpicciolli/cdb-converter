@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-const fixturePath = (year: number) =>
+export const fixturePath = (year: number) =>
 	fileURLToPath(
 		new URL(`../fixtures/OfficialRelease-${year}.cdb`, import.meta.url),
 	);
