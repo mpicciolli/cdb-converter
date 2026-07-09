@@ -57,7 +57,7 @@ function parseColumnMetadata(colName: string, colType: string): ColumnMetadata {
 export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 	const structureInfo = db.exec(`PRAGMA table_info("DB_STRUCTURE")`);
 	const hasFlagsColumn =
-		structureInfo.length > 0 &&
+		(structureInfo[0]?.values.length ?? 0) > 0 &&
 		structureInfo[0].values.some((row) => row[1] === "Flags");
 
 	const tablesResult = db.exec(
@@ -65,7 +65,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			? `SELECT TableName, ID, Flags FROM DB_STRUCTURE ORDER BY ID`
 			: `SELECT TableName, ID FROM DB_STRUCTURE ORDER BY ID`,
 	);
-	if (tablesResult.length === 0) {
+	if ((tablesResult[0]?.values.length ?? 0) === 0) {
 		throw new Error("No DB_STRUCTURE table found");
 	}
 

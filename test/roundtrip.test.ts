@@ -17,10 +17,10 @@ import { readFileSync } from "node:fs";
 import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it } from "vitest";
 import { cdbToSql, sqlToCdb } from "../src/index";
-import type { SqlDatabase, SqlJsStatic } from "../src/types";
+import type { SqlDatabase, SqlEngine } from "../src/types";
 import { saveFixtures } from "./fixtures/save.fixture";
 
-let SQL: SqlJsStatic;
+let SQL: SqlEngine;
 
 beforeAll(async () => {
 	SQL = await initSqlJs();
@@ -74,7 +74,7 @@ describe("cdb <-> sql round-trip (no data loss)", () => {
 
 		// 2. Serialize to SQLite bytes and reopen — mirrors the CLI writing a .sqlite
 		//    file and reading it back, dropping any in-memory-only state.
-		const db2 = new SQL.Database(db1.export()) as SqlDatabase;
+		const db2 = new SQL.Database(db1.export());
 
 		// 3. sql -> cdb -> sql
 		const db3 = cdbToSql(sqlToCdb(db2), SQL);

@@ -2,16 +2,16 @@
  * Convert CDB binary format to SQLite database
  */
 
-import type { SqlValue } from "sql.js";
 import { decompressCdb } from "./compression";
-import { inferKeys } from "./keyInference";
 import type { TableKeys } from "./keyInference";
+import { inferKeys } from "./keyInference";
 import { CDBReader } from "./reader";
 import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
 import type {
 	CdbToSqlOptions,
 	SqlDatabase,
-	SqlJsStatic,
+	SqlEngine,
+	SqlValue,
 	TableInfo,
 } from "./types";
 
@@ -114,12 +114,12 @@ function buildTableConstraints(
  */
 export function cdbToSql(
 	cdbData: ArrayBuffer | Uint8Array,
-	SQL: SqlJsStatic,
+	SQL: SqlEngine,
 	options?: CdbToSqlOptions,
 ): SqlDatabase {
 	const decompressedData = decompressCdb(cdbData);
 	const reader = new CDBReader(decompressedData);
-	const db = new SQL.Database() as SqlDatabase;
+	const db = new SQL.Database();
 	db.run("PRAGMA foreign_keys = OFF");
 
 	const wrapperChunk = reader.readChunk();

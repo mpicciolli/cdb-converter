@@ -83,10 +83,10 @@ npx cdb-converter --version
 | `.cdb`            | CDB → SQLite | `<input>.sqlite` |
 | `.sqlite` / `.db` | SQLite → CDB | `<input>.cdb`    |
 
-| Option              | Effect                                                                                             |
-| ------------------- | -------------------------------------------------------------------------------------------------- |
+| Option              | Effect                                                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `-n`, `--normalize` | (CDB → SQLite only) reconstruct PK/FK constraints from PCM naming conventions. See [Normalized schema](#normalized-schema). |
-| `--index-fk`        | Implies `--normalize`; also indexes every FK column for faster JOINs (roughly doubles output size). |
+| `--index-fk`        | Implies `--normalize`; also indexes every FK column for faster JOINs (roughly doubles output size).                         |
 
 ## Library usage
 
@@ -195,12 +195,13 @@ const decompressed = decompressCdb(compressed); // accepts compressed or raw inp
 
 ## API reference
 
-### `cdbToSql(cdbBuffer, SQL, options?): Database`
+### `cdbToSql(cdbBuffer, SQL, options?): SqlDatabase`
 
 Convert CDB binary data into a SQLite database instance.
 
 - **`cdbBuffer`** — `ArrayBuffer | Uint8Array`, raw CDB data (compressed or uncompressed).
-- **`SQL`** — `SqlJsStatic`, the module returned by `initSqlJs()`.
+- **`SQL`** — a `SqlEngine` (the module returned by `initSqlJs()` satisfies this out of the box).
+- **returns** — a `SqlDatabase` with the CDB tables loaded.
 - **`options.normalize`** — `boolean` (default `false`). Reconstruct PK/FK constraints from PCM naming conventions. See [Normalized schema](#normalized-schema).
 - **`options.indexForeignKeys`** — `boolean` (default `false`). When normalizing, also index every FK column for faster JOINs (roughly doubles the output size).
 - **returns** — a `sql.js` `Database` with the CDB tables loaded.
@@ -209,8 +210,15 @@ Convert CDB binary data into a SQLite database instance.
 
 Convert a SQLite database back to CDB binary format (automatically compressed).
 
-- **`db`** — a `sql.js` `Database` instance.
+- **`db`** — a `SqlDatabase` instance.
 - **returns** — compressed CDB binary data as an `ArrayBuffer`.
+
+### Using a different SQLite engine
+
+The library's public API is not tied to `sql.js` — it is typed against the minimal, self-contained `SqlEngine`/`SqlDatabase` interfaces exported from the package root, so any object matching that shape works, with no change required to the library:
+
+- [Node.js — swapping the SQLite engine](./samples/node-sqlite-engine/) — uses the bundled, tested [`node:sqlite`](https://nodejs.org/api/sqlite.html) adapter (`cdb-converter/adapters/node-sqlite`).
+- [Node.js — using better-sqlite3 as the SQLite engine](./samples/node-better-sqlite3-engine/) — a hand-written adapter for [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3), not shipped by this package since it would add a native dependency most consumers don't need.
 
 ### `compressCdb(data): ArrayBuffer`
 
@@ -269,11 +277,11 @@ A full `cdb → sqlite → cdb` round-trip on a real ~60k-row database stays wel
 
 Normalization is opt-in and costs only what you ask for (measured against the default conversion, ~60k rows):
 
-| Mode                                          | Conversion time | Output size |
-| --------------------------------------------- | --------------- | ----------- |
-| Default (flat)                                | baseline        | baseline    |
-| `normalize`                                   | +~10%           | +~40%       |
-| `normalize` + `indexForeignKeys`              | +~40%           | +~130%      |
+| Mode                             | Conversion time | Output size |
+| -------------------------------- | --------------- | ----------- |
+| Default (flat)                   | baseline        | baseline    |
+| `normalize`                      | +~10%           | +~40%       |
+| `normalize` + `indexForeignKeys` | +~40%           | +~130%      |
 
 See **[bench/README.md](bench/README.md)** for the full per-fixture numbers, the bundle breakdown, and how to reproduce them (`npm run bench`).
 
@@ -284,6 +292,8 @@ Runnable examples live in the [samples](./samples/) folder:
 - [Browser](./samples/browser/) — convert a `.cdb` file to SQLite directly in the browser.
 - [Node.js — CDB to SQLite](./samples/node-cdb-to-sql/) — convert a `.cdb` file into a `.sqlite` file.
 - [Node.js — SQLite to CDB](./samples/node-sql-to-cdb/) — convert a `.sqlite` or `.db` file back into a `.cdb` file.
+- [Node.js — swapping the SQLite engine](./samples/node-sqlite-engine/) — use the bundled `node:sqlite` adapter instead of `sql.js`.
+- [Node.js — using better-sqlite3 as the SQLite engine](./samples/node-better-sqlite3-engine/) — wire up a hand-written `better-sqlite3` adapter.
 
 ## License
 
