@@ -1,9 +1,0 @@
-{
-	"name": "node-sqlite-engine-sample",
-	"private": true,
-	"type": "module",
-	"description": "Sample showing cdb-converter used with a hand-written node:sqlite SqlEngine adapter.",
-	"devDependencies": {
-		"@types/node": "^26.1.1"
-	}
-}
