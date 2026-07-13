@@ -80,7 +80,7 @@ export interface SqlDatabase {
 }
 
 export interface SqlEngine {
-	Database: new (data?: Uint8Array | number[]) => SqlDatabase;
+	Database: new (data?: Uint8Array | number[] | undefined) => SqlDatabase;
 }
 
 export interface ColumnMetadata {
