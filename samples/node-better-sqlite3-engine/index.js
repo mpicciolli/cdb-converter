@@ -22,7 +22,6 @@ async function main() {
 	const inputPath = resolve(process.cwd(), inputArg);
 	const cdbBytes = await readFile(inputPath);
 
-	// Same cdbToSql call as with sql.js, but backed by better-sqlite3 instead.
 	const db = cdbToSql(cdbBytes, betterSqlite3Engine);
 	try {
 		const tables = db.exec(

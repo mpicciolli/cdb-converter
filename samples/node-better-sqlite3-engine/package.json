@@ -5,5 +5,8 @@
 	"description": "Sample showing cdb-converter used with a hand-written better-sqlite3 SqlEngine adapter.",
 	"dependencies": {
 		"better-sqlite3": "^11.3.0"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.13"
 	}
 }

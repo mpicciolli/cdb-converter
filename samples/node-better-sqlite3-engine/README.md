@@ -1,8 +1,8 @@
 # Node.js — using better-sqlite3 as the SQLite engine
 
-This sample shows that `cdb-converter` isn't tied to `sql.js` or the bundled `node:sqlite` adapter: [`engine.js`](./engine.js) is a small hand-written `SqlEngine`/`SqlDatabase` adapter wrapping [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3), used as a drop-in replacement for `initSqlJs()`.
+This sample shows that `cdb-converter` isn't tied to `sql.js`: [`engine.js`](./engine.js) is a small hand-written `SqlEngine`/`SqlDatabase` adapter wrapping [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3), used as a drop-in replacement for `initSqlJs()`. See the [`node-sqlite-engine`](../node-sqlite-engine) sample for the equivalent adapter built on Node's built-in `node:sqlite` instead.
 
-Unlike the `node:sqlite` adapter, this one is **not shipped by `cdb-converter`** — `better-sqlite3` is a native dependency (requires `node-gyp`/prebuilt bindings) that most consumers don't need, so it's kept out of the main package and lives only in this sample.
+Neither adapter is shipped by `cdb-converter` itself — both are hand-written, sample-local `SqlEngine`/`SqlDatabase` implementations. `better-sqlite3` in particular is a native dependency (requires `node-gyp`/prebuilt bindings) that most consumers don't need, so it's kept out of the main package and lives only in this sample.
 
 ## What it does
 

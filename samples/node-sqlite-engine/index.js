@@ -20,7 +20,6 @@ async function main() {
 	const inputPath = resolve(process.cwd(), inputArg);
 	const cdbBytes = await readFile(inputPath);
 
-	// Same cdbToSql call as with sql.js, but backed by node:sqlite instead.
 	const db = cdbToSql(cdbBytes, nodeSqliteEngine);
 	try {
 		const tables = db.exec(
