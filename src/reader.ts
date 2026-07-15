@@ -233,6 +233,9 @@ export class CDBReader {
 				{
 					const children: Record<number, unknown> = {};
 					while (this.pos < chunkEndPos) {
+						// Fewer than 20 bytes remaining means only trailing
+						// padding + the CHUNK_END magic are left, not another
+						// child chunk. readMagic() below still verifies it.
 						if (chunkEndPos - this.pos < 20) {
 							break;
 						}
@@ -248,18 +251,26 @@ export class CDBReader {
 				break;
 
 			default:
-				throw new Error(
-					`Unknown chunk type: 0x${(header.chunkType as number).toString(16)}`,
-				);
+				{
+					console.warn(
+						`Skipping unknown chunk type: 0x${(header.chunkType as number).toString(16)} at position ${chunkStartPos}`,
+					);
+					const skippedBytes = chunkEndPos - this.pos - 4;
+					result = {
+						type: header.chunkType,
+						value: this.readBytes(skippedBytes),
+					};
+				}
+				break;
 		}
 
 		this.readPadding();
-		this.read32(); // CHUNK_END magic
+		this.readMagic(MAGIC.CHUNK_END, "CHUNK_END");
 		return result;
 	}
 
 	private readArray<T>(itemReader: () => T): T[] {
-		this.read32(); // ARRAY_BEGIN
+		this.readMagic(MAGIC.ARRAY_BEGIN, "ARRAY_BEGIN");
 		const count = this.read32();
 		const items: T[] = [];
 
@@ -267,7 +278,7 @@ export class CDBReader {
 			items.push(itemReader());
 		}
 
-		this.read32(); // ARRAY_END
+		this.readMagic(MAGIC.ARRAY_END, "ARRAY_END");
 		return items;
 	}
 

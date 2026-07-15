@@ -3,6 +3,7 @@
  */
 
 import { compressCdb } from "./compression";
+import { escapeSqlIdentifier } from "./sqlUtils";
 import { CDBWriter } from "./writer";
 import {
 	CHUNK_TYPE,
@@ -88,7 +89,8 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 	writer.write32(tables.length);
 
 	tables.forEach((tableInfo) => {
-		const schemaResult = db.exec(`PRAGMA table_info("${tableInfo.name}")`);
+		const escapedTableName = escapeSqlIdentifier(tableInfo.name);
+		const schemaResult = db.exec(`PRAGMA table_info("${escapedTableName}")`);
 		if (schemaResult.length === 0 || schemaResult[0].values.length === 0) {
 			throw new Error(
 				`No schema information available for table "${tableInfo.name}"`,
@@ -104,7 +106,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			columnInfo[colName] = parseColumnMetadata(colName, colType);
 		});
 
-		const dataResult = db.exec(`SELECT * FROM "${tableInfo.name}"`);
+		const dataResult = db.exec(`SELECT * FROM "${escapedTableName}"`);
 		const rows = dataResult.length > 0 ? dataResult[0].values : [];
 
 		writer.writeChunkOpen(CHUNK_TYPE.TABLE, tableInfo.name);
