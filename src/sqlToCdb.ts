@@ -75,7 +75,11 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 		flags: hasFlagsColumn ? (row[2] as number | null) : null,
 	}));
 
-	const estimatedSize = db.export().length;
+	const pageCountResult = db.exec(`PRAGMA page_count`);
+	const pageSizeResult = db.exec(`PRAGMA page_size`);
+	const estimatedSize =
+		(pageCountResult[0]?.values[0]?.[0] as number) *
+		(pageSizeResult[0]?.values[0]?.[0] as number);
 	const writer = new CDBWriter(estimatedSize);
 
 	writer.writeChunkOpen(CHUNK_TYPE.WRAPPER, "cyanide database");
