@@ -75,6 +75,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
 			indexForeignKeys = true;
 			continue;
 		}
+		if (arg.startsWith("-") && arg !== "-") {
+			throw new Error(
+				`Unknown option "${arg}". Run "cdb-converter --help" for usage.`,
+			);
+		}
 		positionals.push(arg);
 	}
 
@@ -186,7 +191,14 @@ async function convert(
 }
 
 export async function run(argv: string[]): Promise<void> {
-	const parsed = parseArgs(argv);
+	let parsed: ParsedArgs;
+	try {
+		parsed = parseArgs(argv);
+	} catch (error) {
+		console.error(`Error: ${error instanceof Error ? error.message : error}`);
+		process.exitCode = 1;
+		return;
+	}
 
 	if (parsed.command === "help") {
 		console.log(HELP_TEXT);
