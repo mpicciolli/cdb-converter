@@ -148,7 +148,17 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			writer.write32(info.cdbDataType);
 			writer.writeChunkClose();
 
-			writer.writeColumnData(info.cdbDataType, columnData[colIdx]);
+			const values = columnData[colIdx];
+			values.forEach((value, rowIdx) => {
+				if (value === null || value === undefined) {
+					throw new Error(
+						`NULL value in table "${tableInfo.name}", column "${columnName}", row ${rowIdx}. ` +
+							"The CDB format cannot represent NULL; supply a concrete value for every cell.",
+					);
+				}
+			});
+
+			writer.writeColumnData(info.cdbDataType, values);
 
 			writer.writeChunkClose();
 		});
