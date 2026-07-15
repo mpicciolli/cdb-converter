@@ -254,12 +254,12 @@ export class CDBReader {
 		}
 
 		this.readPadding();
-		this.read32(); // CHUNK_END magic
+		this.readMagic(MAGIC.CHUNK_END, "CHUNK_END");
 		return result;
 	}
 
 	private readArray<T>(itemReader: () => T): T[] {
-		this.read32(); // ARRAY_BEGIN
+		this.readMagic(MAGIC.ARRAY_BEGIN, "ARRAY_BEGIN");
 		const count = this.read32();
 		const items: T[] = [];
 
@@ -267,7 +267,7 @@ export class CDBReader {
 			items.push(itemReader());
 		}
 
-		this.read32(); // ARRAY_END
+		this.readMagic(MAGIC.ARRAY_END, "ARRAY_END");
 		return items;
 	}
 
