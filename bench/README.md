@@ -13,8 +13,10 @@ npm run bench                          # all official fixtures
 npm run bench -- --outputJson out.json # machine-readable results
 ```
 
-Each case is warmed up before timing, so a cold outlier (JIT warm-up, sql.js/WASM init)
-does not skew the result.
+Each case is warmed up before timing, so a cold outlier (JIT warm-up, native binding load)
+does not skew the result. Benchmarks run against the `better-sqlite3` engine, matching what
+the CLI uses in Node.js — see [Bundle size](#bundle-size) for how the `sql.js` (WASM) engine
+compares.
 
 ## Conversion performance
 
@@ -23,18 +25,21 @@ Round-trip timings against the official Pro Cycling Manager databases (`mean` re
 
 | Fixture                  | Input (CDB) | Tables |   Rows | cdbToSql | sqlToCdb | Round-trip |
 | ------------------------ | ----------: | -----: | -----: | -------: | -------: | ---------: |
-| OfficialRelease-2014.cdb |      355 kB |    136 | 31,741 | 131.7 ms | 119.6 ms |   251.3 ms |
-| OfficialRelease-2018.cdb |      566 kB |    150 | 62,127 | 167.8 ms | 198.5 ms |   366.3 ms |
-| OfficialRelease-2019.cdb |      610 kB |    158 | 64,560 | 177.2 ms | 210.0 ms |   387.2 ms |
-| OfficialRelease-2021.cdb |      417 kB |    147 | 36,672 | 133.1 ms | 128.1 ms |   261.2 ms |
-| OfficialRelease-2025.cdb |      441 kB |    149 | 34,691 | 145.3 ms | 144.8 ms |   290.1 ms |
+| OfficialRelease-2014.cdb |      355 kB |    136 | 31,741 | 107.2 ms | 100.5 ms |   207.7 ms |
+| OfficialRelease-2018.cdb |      566 kB |    150 | 62,127 | 141.5 ms | 171.1 ms |   312.6 ms |
+| OfficialRelease-2019.cdb |      610 kB |    158 | 64,560 | 144.9 ms | 179.5 ms |   324.3 ms |
+| OfficialRelease-2021.cdb |      417 kB |    147 | 36,672 | 109.3 ms | 109.3 ms |   218.6 ms |
+| OfficialRelease-2025.cdb |      441 kB |    149 | 34,691 | 122.6 ms | 125.8 ms |   248.4 ms |
 
 - **cdbToSql** — decompress + parse the CDB binary into an in-memory SQLite database.
 - **sqlToCdb** — serialize the SQLite database back to compressed CDB bytes.
-- **Round-trip** — `cdbToSql + sqlToCdb`. sql.js `db.export()` (SQLite → bytes) is
-  negligible (~0.5 ms) and omitted from the total.
+- **Round-trip** — `cdbToSql + sqlToCdb`. `db.export()` (SQLite → bytes) is
+  negligible (~0.3 ms) and omitted from the total.
 
-Most of the time is spent in binary parsing/writing, not in SQLite itself.
+Most of the time is spent in binary parsing/writing, not in SQLite itself. Native
+`better-sqlite3` runs this ~15-17% faster end-to-end than the previous `sql.js` (WASM)
+baseline, since it avoids per-call WASM boundary overhead on the large number of small
+`run`/`exec` calls the conversion makes.
 
 ## Normalization overhead
 
@@ -47,11 +52,11 @@ their cost against the default flat conversion.
 
 | Fixture                  |  Default | `normalize` |  `+ indexForeignKeys` |
 | ------------------------ | -------: | ----------: | --------------------: |
-| OfficialRelease-2014.cdb | 132.7 ms | 148.8 ms (+12%) |    187.4 ms (+41%) |
-| OfficialRelease-2018.cdb | 172.5 ms | 194.9 ms (+13%) |    234.4 ms (+36%) |
-| OfficialRelease-2019.cdb | 173.3 ms | 188.0 ms (+8%)  |    240.8 ms (+39%) |
-| OfficialRelease-2021.cdb | 133.1 ms | 145.9 ms (+10%) |    194.6 ms (+46%) |
-| OfficialRelease-2025.cdb | 137.8 ms | 149.5 ms (+8%)  |    192.1 ms (+39%) |
+| OfficialRelease-2014.cdb | 107.2 ms | 122.8 ms (+14%) |    140.6 ms (+31%) |
+| OfficialRelease-2018.cdb | 141.5 ms | 151.0 ms (+7%)  |    190.1 ms (+34%) |
+| OfficialRelease-2019.cdb | 144.9 ms | 160.6 ms (+11%) |    189.6 ms (+31%) |
+| OfficialRelease-2021.cdb | 109.3 ms | 114.7 ms (+5%)  |    149.2 ms (+37%) |
+| OfficialRelease-2025.cdb | 122.6 ms | 124.1 ms (+1%)  |    150.1 ms (+23%) |
 
 ### Output size (`db.export()`)
 
@@ -73,16 +78,18 @@ their cost against the default flat conversion.
 
 ## Bundle size
 
-The converter's own code is tiny; the footprint you actually ship is dominated by the
-SQLite engine it depends on.
+The converter's own code is tiny; the footprint you actually ship depends on which SQLite
+engine you use.
 
-| Component                       | Size                                     |
-| ------------------------------- | ---------------------------------------- |
-| cdb-converter (published, gzip) | **~28 kB** (npm tarball)                 |
-| `sql.js` WebAssembly runtime    | ~644 kB (`sql-wasm.wasm`, loaded lazily) |
-| `pako` (zlib deflate/inflate)   | small, tree-shakeable                    |
+| Component                                        | Size                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------- |
+| cdb-converter (published, gzip)                  | **~28 kB** (npm tarball)                                           |
+| `better-sqlite3` (default, Node)                 | native addon, compiled at install time — no JS/WASM bundle weight |
+| `sql.js` WebAssembly runtime (browser, optional) | ~644 kB (`sql-wasm.wasm`, loaded lazily)                           |
+| `pako` (zlib deflate/inflate)                    | small, tree-shakeable                                              |
 
-The library itself adds only a few kilobytes. The SQLite WASM binary is the real weight,
-and you would pay for it with any SQLite-in-JS approach. In the browser the `.wasm` is
-fetched on demand (not part of your JS bundle); in Node.js it is loaded from
-`node_modules` at runtime.
+The library itself adds only a few kilobytes. `better-sqlite3` — the default engine used
+by the CLI and Node consumers — is a native addon: it costs an install-time compile step
+(or a prebuilt binary), not JS/WASM bundle size. `sql.js` remains available as an optional
+engine (`cdb-converter/engines/sql-js`) for the browser, where its `.wasm` is fetched on
+demand rather than bundled into your JS.

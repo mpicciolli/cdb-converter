@@ -4,8 +4,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import initSqlJs from "sql.js";
 import { cdbToSql } from "./cdbToSql";
+import { betterSqlite3Engine } from "./engines/better-sqlite3";
 import { sqlToCdb } from "./sqlToCdb";
 
 declare const CDB_CONVERTER_VERSION: string | undefined;
@@ -139,14 +139,16 @@ async function convert(
 		output ?? getDefaultOutputPath(input, direction),
 	);
 
-	const SQL = await initSqlJs();
 	const inputBytes = await readFile(inputPath);
 
 	let outputBytes: Uint8Array;
 	let summary: string[] = [];
 
 	if (direction === "cdb-to-sql") {
-		const db = cdbToSql(inputBytes, SQL, { normalize, indexForeignKeys });
+		const db = cdbToSql(inputBytes, betterSqlite3Engine, {
+			normalize,
+			indexForeignKeys,
+		});
 
 		try {
 			const tables = db.exec(
@@ -166,7 +168,7 @@ async function convert(
 			db.close();
 		}
 	} else {
-		const db = new SQL.Database(inputBytes);
+		const db = new betterSqlite3Engine.Database(inputBytes);
 
 		try {
 			outputBytes = new Uint8Array(sqlToCdb(db));

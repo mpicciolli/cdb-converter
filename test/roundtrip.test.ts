@@ -1,7 +1,8 @@
 /**
  * Round-trip conversion tests (intention: no data loss).
  *
- * Drives the REAL sql.js engine (no mocks) through the same path the CLI uses:
+ * Drives the REAL better-sqlite3 engine (no mocks) through the same path the CLI
+ * uses:
  *   cdb -> cdbToSql -> db.export() (SQLite bytes on disk) -> reopen -> sqlToCdb -> cdb
  * then converts back to SQL and asserts the semantic content is identical.
  *
@@ -14,17 +15,13 @@
  */
 
 import { readFileSync } from "node:fs";
-import initSqlJs from "sql.js";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { betterSqlite3Engine } from "../src/engines/better-sqlite3";
 import { cdbToSql, sqlToCdb } from "../src/index";
-import type { SqlDatabase, SqlEngine } from "../src/types";
+import type { SqlDatabase } from "../src/types";
 import { saveFixtures } from "./fixtures/save.fixture";
 
-let SQL: SqlEngine;
-
-beforeAll(async () => {
-	SQL = await initSqlJs();
-});
+const SQL = betterSqlite3Engine;
 
 interface TableSnapshot {
 	name: string;

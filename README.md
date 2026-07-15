@@ -36,8 +36,8 @@ The conversion is **lossless**: a full `cdb → sqlite → cdb` round-trip prese
 - **CLI included** — convert files without writing any code; direction is auto-detected.
 - **Lossless round-trip** — table flags, column order, and data types survive an export/reopen cycle.
 - **Optional relational schema** — reconstruct `PRIMARY KEY` / `FOREIGN KEY` constraints for JOINs and ER diagrams, without breaking the round-trip.
-- **Isomorphic** — runs in Node.js and in the browser via [sql.js](https://github.com/sql-js/sql.js).
-- **Lightweight** — the library's own code is ~28 kB, with only `pako` and `sql.js` as dependencies.
+- **Node-first, browser-capable** — the CLI and default `better-sqlite3` engine target Node.js; an optional `sql.js` (WASM) engine covers the browser.
+- **Lightweight** — the library's own code is ~28 kB, with only `pako` as a hard dependency. SQLite engines (`better-sqlite3`, `sql.js`) are optional and installed separately.
 - **TypeScript-first** — native type definitions and full IDE support.
 - **Tree-shakeable** — pure functions, no side effects, ESM + CommonJS builds.
 
@@ -48,7 +48,7 @@ npm install cdb-converter
 ```
 
 > [!NOTE]
-> Requires **Node.js 22 or newer**. In the browser, `sql.js` loads its WebAssembly runtime on demand.
+> Requires **Node.js 22 or newer**. The CLI and the default `better-sqlite3` engine need `better-sqlite3` (a native dependency); install it alongside `cdb-converter`. For the browser, install `sql.js` instead — it loads its WebAssembly runtime on demand.
 
 The fastest way to try it is the CLI:
 
@@ -94,14 +94,12 @@ npx cdb-converter --version
 
 ```typescript
 import fs from "node:fs";
-import initSqlJs from "sql.js";
+import { betterSqlite3Engine } from "cdb-converter/engines/better-sqlite3";
 import { cdbToSql } from "cdb-converter";
-
-const SQL = await initSqlJs();
 
 // Read and convert a CDB file
 const cdbBuffer = fs.readFileSync("save.cdb");
-const db = cdbToSql(cdbBuffer, SQL);
+const db = cdbToSql(cdbBuffer, betterSqlite3Engine);
 
 // Query it like any SQLite database
 const result = db.exec("SELECT * FROM Teams LIMIT 5");
@@ -112,14 +110,14 @@ fs.writeFileSync("save.sqlite", db.export());
 ```
 
 > [!IMPORTANT]
-> You must pass the initialized `sql.js` module returned by `initSqlJs()`. This library does not initialize `sql.js` for you: that setup is asynchronous and environment-specific (the caller decides how the wasm file is loaded in Node.js or the browser).
+> You must pass a `SqlEngine`. `cdb-converter/engines/better-sqlite3` (requires the `better-sqlite3` package) is the default for Node.js; `cdb-converter/engines/sql-js` (requires the `sql.js` package) works in the browser but needs an `await` to initialize its WASM runtime. See [Using a different SQLite engine](#using-a-different-sqlite-engine).
 
 ### Normalized schema
 
 By default the SQLite output is a flat mirror of the CDB tables, with no relational constraints. Pass `{ normalize: true }` to reconstruct `PRIMARY KEY` and `FOREIGN KEY` constraints from the PCM naming conventions (`ID{table}` identity columns and `fkID{target}` references), turning the export into a proper relational database — ready for JOINs, entity-relationship diagrams, and schema introspection tools.
 
 ```typescript
-const db = cdbToSql(cdbBuffer, SQL, { normalize: true });
+const db = cdbToSql(cdbBuffer, betterSqlite3Engine, { normalize: true });
 
 // Relationships are now navigable:
 db.exec(`
@@ -138,24 +136,22 @@ Notes:
 
 ```typescript
 // Lean: constraints only (~+40% size)
-cdbToSql(cdbBuffer, SQL, { normalize: true });
+cdbToSql(cdbBuffer, betterSqlite3Engine, { normalize: true });
 
 // Heavier, faster JOINs: also index FK columns (~2x size)
-cdbToSql(cdbBuffer, SQL, { normalize: true, indexForeignKeys: true });
+cdbToSql(cdbBuffer, betterSqlite3Engine, { normalize: true, indexForeignKeys: true });
 ```
 
 ### SQLite to CDB
 
 ```typescript
 import fs from "node:fs";
-import initSqlJs from "sql.js";
+import { betterSqlite3Engine } from "cdb-converter/engines/better-sqlite3";
 import { sqlToCdb } from "cdb-converter";
-
-const SQL = await initSqlJs();
 
 // Load a SQLite database and convert back to CDB
 const sqliteBuffer = fs.readFileSync("save.sqlite");
-const db = new SQL.Database(sqliteBuffer);
+const db = new betterSqlite3Engine.Database(sqliteBuffer);
 
 const cdbBuffer = sqlToCdb(db); // automatically compressed
 fs.writeFileSync("save.cdb", Buffer.from(cdbBuffer));
@@ -178,8 +174,9 @@ const decompressed = decompressCdb(compressed); // accepts compressed or raw inp
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.14.1/dist/sql-wasm.js"></script>
 <script type="module">
   import { cdbToSql } from "https://cdn.jsdelivr.net/npm/cdb-converter/+esm";
+  import { createSqlJsEngine } from "https://cdn.jsdelivr.net/npm/cdb-converter/+esm/engines/sql-js";
 
-  const SQL = await initSqlJs({
+  const SQL = await createSqlJsEngine({
     locateFile: (file) =>
       `https://cdn.jsdelivr.net/npm/sql.js@1.14.1/dist/${file}`,
   });
@@ -200,11 +197,10 @@ const decompressed = decompressCdb(compressed); // accepts compressed or raw inp
 Convert CDB binary data into a SQLite database instance.
 
 - **`cdbBuffer`** — `ArrayBuffer | Uint8Array`, raw CDB data (compressed or uncompressed).
-- **`SQL`** — a `SqlEngine` (the module returned by `initSqlJs()` satisfies this out of the box).
-- **returns** — a `SqlDatabase` with the CDB tables loaded.
+- **`SQL`** — a `SqlEngine`. Use `betterSqlite3Engine` from `cdb-converter/engines/better-sqlite3` (Node.js) or `createSqlJsEngine()` from `cdb-converter/engines/sql-js` (browser). See [Using a different SQLite engine](#using-a-different-sqlite-engine).
 - **`options.normalize`** — `boolean` (default `false`). Reconstruct PK/FK constraints from PCM naming conventions. See [Normalized schema](#normalized-schema).
 - **`options.indexForeignKeys`** — `boolean` (default `false`). When normalizing, also index every FK column for faster JOINs (roughly doubles the output size).
-- **returns** — a `sql.js` `Database` with the CDB tables loaded.
+- **returns** — a `SqlDatabase` with the CDB tables loaded.
 
 ### `sqlToCdb(db): ArrayBuffer`
 
@@ -215,10 +211,14 @@ Convert a SQLite database back to CDB binary format (automatically compressed).
 
 ### Using a different SQLite engine
 
-The library's public API is not tied to `sql.js` — it is typed against the minimal, self-contained `SqlEngine`/`SqlDatabase` interfaces exported from the package root, so any object matching that shape works, with no change required to the library:
+The library's public API isn't tied to any single SQLite implementation — it's typed against the minimal, self-contained `SqlEngine`/`SqlDatabase` interfaces exported from the package root, so any object matching that shape works. Two engines ship with the package as optional subpaths (their underlying SQLite package must be installed separately, so consumers who don't need one don't pay for it):
 
-- [Node.js — swapping the SQLite engine](./samples/node-sqlite-engine/) — uses the bundled, tested [`node:sqlite`](https://nodejs.org/api/sqlite.html) adapter (`cdb-converter/adapters/node-sqlite`).
-- [Node.js — using better-sqlite3 as the SQLite engine](./samples/node-better-sqlite3-engine/) — a hand-written adapter for [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3), not shipped by this package since it would add a native dependency most consumers don't need.
+- **`cdb-converter/engines/better-sqlite3`** — exports `betterSqlite3Engine`. The default for Node.js and what the CLI uses; requires `npm install better-sqlite3` (a native dependency).
+- **`cdb-converter/engines/sql-js`** — exports `createSqlJsEngine()` (async). The only option that runs in the browser; requires `npm install sql.js`.
+
+Other engines can be wired up with a hand-written adapter matching `SqlEngine`/`SqlDatabase`:
+
+- [Node.js — swapping the SQLite engine](./samples/node-sqlite-engine/) — a sample adapter for Node's built-in [`node:sqlite`](https://nodejs.org/api/sqlite.html), not shipped yet since its API is still experimental.
 
 ### `compressCdb(data): ArrayBuffer`
 
@@ -289,11 +289,10 @@ See **[bench/README.md](bench/README.md)** for the full per-fixture numbers, the
 
 Runnable examples live in the [samples](./samples/) folder:
 
-- [Browser](./samples/browser/) — convert a `.cdb` file to SQLite directly in the browser.
-- [Node.js — CDB to SQLite](./samples/node-cdb-to-sql/) — convert a `.cdb` file into a `.sqlite` file.
+- [Browser](./samples/browser/) — convert a `.cdb` file to SQLite directly in the browser, using the `sql.js` engine.
+- [Node.js — CDB to SQLite](./samples/node-cdb-to-sql/) — convert a `.cdb` file into a `.sqlite` file, using the default `better-sqlite3` engine.
 - [Node.js — SQLite to CDB](./samples/node-sql-to-cdb/) — convert a `.sqlite` or `.db` file back into a `.cdb` file.
-- [Node.js — swapping the SQLite engine](./samples/node-sqlite-engine/) — use the bundled `node:sqlite` adapter instead of `sql.js`.
-- [Node.js — using better-sqlite3 as the SQLite engine](./samples/node-better-sqlite3-engine/) — wire up a hand-written `better-sqlite3` adapter.
+- [Node.js — swapping the SQLite engine](./samples/node-sqlite-engine/) — wire up a `node:sqlite` adapter instead of the default `better-sqlite3` engine.
 
 ## License
 

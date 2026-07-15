@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
-import initSqlJs from "sql.js";
+import { betterSqlite3Engine } from "../../dist/engines/better-sqlite3";
 import { cdbToSql } from "../../dist/index.mjs";
 
 function usage() {
@@ -34,9 +34,8 @@ async function main() {
 		outputArg || getDefaultOutputPath(inputArg),
 	);
 
-	const SQL = await initSqlJs();
 	const cdbBytes = await readFile(inputPath);
-	const db = cdbToSql(cdbBytes, SQL);
+	const db = cdbToSql(cdbBytes, betterSqlite3Engine);
 	try {
 		const sqliteBytes = db.export();
 

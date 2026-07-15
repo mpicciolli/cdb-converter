@@ -5,7 +5,7 @@ This sample converts a SQLite database file back into a Pro Cycling Manager `.cd
 ## What it does
 
 - Read a `.sqlite` or `.db` file from disk
-- Open it with `sql.js`
+- Open it with the `better-sqlite3` engine
 - Convert it with `sqlToCdb`
 - Write the generated `.cdb` file
 

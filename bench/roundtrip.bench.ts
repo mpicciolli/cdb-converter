@@ -4,14 +4,15 @@
 //   - cdbToSql                     : decompress + parse CDB -> in-memory SQLite
 //   - cdbToSql (normalize)         : same, plus reconstructed PK/FK constraints
 //   - cdbToSql (normalize+fkIndex) : same, plus an index on every FK column
-//   - export                       : sql.js db.export() (SQLite -> bytes)
+//   - export                       : better-sqlite3 db.export() (SQLite -> bytes)
 //   - sqlToCdb                     : SQLite -> compressed CDB bytes
 //
+// Uses the better-sqlite3 engine, matching what the CLI runs in Node.
 
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-import initSqlJs from "sql.js";
 import { bench, describe } from "vitest";
+import { betterSqlite3Engine } from "../src/engines/better-sqlite3";
 import { cdbToSql, sqlToCdb } from "../src/index";
 
 const FIXTURES = [
@@ -22,7 +23,7 @@ const FIXTURES = [
 	"test/fixtures/OfficialRelease-2025.cdb",
 ];
 
-const SQL = await initSqlJs();
+const SQL = betterSqlite3Engine;
 
 for (const path of FIXTURES) {
 	const cdbBytes = readFileSync(path);
@@ -30,8 +31,8 @@ for (const path of FIXTURES) {
 	describe(basename(path), () => {
 		// cdbToSql builds a fresh database each run. vitest's setup/teardown are
 		// per-cycle (not per-iteration) hooks, so we close the database inside the
-		// timed function to keep the sql.js/WASM heap from growing across
-		// iterations. close() is negligible next to the parse it measures.
+		// timed function to release native handles between iterations. close() is
+		// negligible next to the parse it measures.
 		bench("cdbToSql", () => {
 			cdbToSql(cdbBytes, SQL).close();
 		});
