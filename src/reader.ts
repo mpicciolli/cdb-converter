@@ -362,7 +362,11 @@ export class CDBReader {
 					(view, offset, count) => {
 						const value = view.getFloat32(offset, true);
 						let formatted = this.formatFloat32(value);
-						if (!formatted.includes(".") && count > 1) {
+						if (
+							count > 1 &&
+							!formatted.includes(".") &&
+							!formatted.includes("e")
+						) {
 							formatted += ".0";
 						}
 						return formatted;

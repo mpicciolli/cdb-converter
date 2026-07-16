@@ -59,6 +59,54 @@ function createWrapperWithMissingColumnDescription(): Uint8Array {
 	return writer.getData();
 }
 
+function createFloatListTable(rows: string[]): Uint8Array {
+	const writer = new CDBWriter();
+
+	writer.writeChunkOpen(CHUNK_TYPE.WRAPPER);
+	writer.writeChunkOpen(CHUNK_TYPE.DATABASE_TABLES);
+	writer.write32(MAGIC.ARRAY_BEGIN);
+	writer.write32(1);
+	writer.writeChunkOpen(CHUNK_TYPE.TABLE, "TestTable");
+	writer.writeChunkOpen(CHUNK_TYPE.ROW_COUNT);
+	writer.write32(rows.length);
+	writer.writeChunkClose();
+	writer.writeChunkOpen(CHUNK_TYPE.TABLE_ID);
+	writer.write32(1);
+	writer.writeChunkClose();
+	writer.writeChunkOpen(CHUNK_TYPE.TABLE_FLAGS);
+	writer.write32(0);
+	writer.writeChunkClose();
+	writer.writeChunkOpen(CHUNK_TYPE.COLUMN_DEFINITIONS);
+	writer.write32(MAGIC.ARRAY_BEGIN);
+	writer.write32(1);
+	writer.writeChunkOpen(CHUNK_TYPE.COLUMN, "values");
+	writer.writeChunkOpen(CHUNK_TYPE.COLUMN_DATA_TYPE);
+	writer.write32(DATA_TYPE.FLOAT_LIST);
+	writer.writeChunkClose();
+	writer.writeChunkOpen(CHUNK_TYPE.COLUMN_INDEX);
+	writer.write32(0);
+	writer.writeChunkClose();
+	writer.writeColumnData(DATA_TYPE.FLOAT_LIST, rows);
+	writer.writeChunkClose();
+	writer.write32(MAGIC.ARRAY_END);
+	writer.writeChunkClose();
+	writer.writeChunkClose();
+	writer.write32(MAGIC.ARRAY_END);
+	writer.writeChunkClose();
+	writer.writeChunkClose();
+
+	return writer.getData();
+}
+
+function readFloatListColumn(rows: string[]): unknown[] {
+	const reader = new CDBReader(createFloatListTable(rows));
+	const chunk = reader.readChunk();
+	const tables = (
+		chunk.children as Record<number, { columns: { data: unknown[] }[] }[]>
+	)[CHUNK_TYPE.DATABASE_TABLES];
+	return tables[0].columns[0].data;
+}
+
 describe("CDBReader", () => {
 	it("throws when CHUNK_BEGIN magic is invalid", () => {
 		const reader = new CDBReader(createChunkBuffer({ chunkBegin: 0x12345678 }));
@@ -84,5 +132,40 @@ describe("CDBReader", () => {
 		expect(() => reader.readChunk()).toThrowError(
 			"Invalid column chunk: missing column description",
 		);
+	});
+
+	describe("FLOAT_LIST formatting", () => {
+		it("round-trips small magnitude values without losing precision", () => {
+			const original = Math.fround(1e-8);
+			const data = readFloatListColumn([`(${original},${original})`]);
+
+			for (const part of (data[0] as string).slice(1, -1).split(",")) {
+				expect(Math.fround(Number(part))).toBe(original);
+			}
+		});
+
+		it("does not corrupt exponential notation with a trailing .0", () => {
+			const original = Math.fround(1e-8);
+			const data = readFloatListColumn([`(${original},${original})`]);
+
+			for (const part of (data[0] as string).slice(1, -1).split(",")) {
+				expect(part).not.toMatch(/e-?\d+\.0$/);
+			}
+		});
+
+		it("still appends .0 to whole-number values in multi-element lists", () => {
+			const data = readFloatListColumn(["(1,2,3)"]);
+
+			expect(data[0]).toBe("(1.0,2.0,3.0)");
+		});
+
+		it("round-trips a mix of small and whole-number values in one list", () => {
+			const original = Math.fround(1e-8);
+			const data = readFloatListColumn([`(${original},2)`]);
+			const parts = (data[0] as string).slice(1, -1).split(",");
+
+			expect(Math.fround(Number(parts[0]))).toBe(original);
+			expect(parts[1]).toBe("2.0");
+		});
 	});
 });
