@@ -7,6 +7,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Paris"
+    cooldown:
+      default-days: 5
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -15,9 +17,14 @@ updates:
       prefix-development: "chore(dev-deps)"
       include: "scope"
     groups:
-      npm-minor-and-patch:
+      npm-minor-patch:
         applies-to: version-updates
-        update-types: ["minor", "patch"]
+        update-types:
+          - "minor"
+          - "patch"
+      ignore:
+        - dependency-name: "@types/node"
+          update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -26,6 +33,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Paris"
+    cooldown:
+      default-days: 5
     open-pull-requests-limit: 10
     labels:
       - "dependencies"

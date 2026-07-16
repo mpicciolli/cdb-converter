@@ -49,7 +49,6 @@
 		"prepare": "husky install"
 	},
 	"dependencies": {
-		"@types/sql.js": "^1.4.11",
 		"pako": "^2.2.0",
 		"sql.js": "^1.14.1"
 	},
