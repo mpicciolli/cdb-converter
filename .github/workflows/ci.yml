@@ -18,10 +18,10 @@ jobs:
         node-version: [22.x, 24.x, 26.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.4.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
@@ -29,11 +29,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-
       - name: Run Biome
-        run: biome ci .
+        run: npx biome ci .
 
       - name: Build
         run: npm run build
@@ -52,10 +49,10 @@ jobs:
         node-version: [22.x, 24.x, 26.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.4.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"

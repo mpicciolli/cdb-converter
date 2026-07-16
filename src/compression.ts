@@ -2,7 +2,7 @@
  * CDB compression/decompression using zlib deflate
  */
 
-import pako from "pako";
+import { deflate, inflate } from "pako";
 import { MAGIC } from "./tableMetadata";
 
 function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
@@ -49,7 +49,7 @@ export function decompressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer {
 	let decompressed: Uint8Array;
 
 	try {
-		decompressed = pako.inflate(compressedData);
+		decompressed = inflate(compressedData);
 	} catch {
 		throw new Error("Malformed compressed CDB: invalid compressed payload");
 	}
@@ -73,7 +73,7 @@ export function decompressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer {
  */
 export function compressCdb(data: ArrayBuffer | Uint8Array): ArrayBuffer {
 	const uncompressedData = toUint8Array(data);
-	const compressed = pako.deflate(uncompressedData);
+	const compressed = deflate(uncompressedData);
 
 	const result = new Uint8Array(12 + compressed.length);
 	const view = new DataView(result.buffer);
