@@ -7,6 +7,7 @@ import { decompressCdb } from "./compression";
 import { inferKeys } from "./keyInference";
 import type { TableKeys } from "./keyInference";
 import { CDBReader } from "./reader";
+import { escapeSqlIdentifier } from "./sqlUtils";
 import { CHUNK_TYPE, DATA_TYPE } from "./tableMetadata";
 import type {
 	CdbToSqlOptions,
@@ -14,10 +15,6 @@ import type {
 	SqlJsStatic,
 	TableInfo,
 } from "./types";
-
-function escapeSqlIdentifier(identifier: string): string {
-	return identifier.replace(/"/g, '""');
-}
 
 /** True when every value in the column is non-null and distinct (safe as a PK). */
 function isUniqueNonNull(data: unknown[]): boolean {
