@@ -156,6 +156,8 @@ export function cdbToSql(
 		}
 	}
 
+	db.run("BEGIN TRANSACTION");
+
 	tables.forEach((table) => {
 		db.run(`INSERT INTO DB_STRUCTURE VALUES (?, ?, ?)`, [
 			table.name,
@@ -205,7 +207,8 @@ export function cdbToSql(
 
 		db.run(`CREATE TABLE "${escapedTableName}" (${tableBody})`);
 
-		// Insert rows in batches (SQLite limit: 999 variables)
+		// Insert rows in batches. 999 is sql.js/SQLite's historical bound parameter
+		// limit; kept as a conservative constant rather than queried at runtime.
 		if (table.rowCount > 0) {
 			const columnsPerRow = table.columns.length;
 			const maxRowsPerBatch = Math.max(1, Math.floor(999 / columnsPerRow));
@@ -233,6 +236,8 @@ export function cdbToSql(
 	for (const indexStatement of deferredIndexes) {
 		db.run(indexStatement);
 	}
+
+	db.run("COMMIT");
 
 	return db;
 }
