@@ -24,6 +24,7 @@ let currentDb;
 let selectedFile;
 
 let downloadUrl;
+let downloadFilename;
 
 async function convertFile() {
 	const file = selectedFile ?? fileInput.files?.[0];
@@ -74,10 +75,9 @@ async function convertFile() {
 		downloadUrl = URL.createObjectURL(
 			new Blob([sqliteBytes], { type: "application/vnd.sqlite3" }),
 		);
-		downloadLink.href = downloadUrl;
-		downloadLink.download = file.name.replace(/\.cdb$/i, "") || "converted";
-		downloadLink.download += ".sqlite";
-		downloadLink.setAttribute("aria-disabled", "false");
+		downloadFilename =
+			(file.name.replace(/\.cdb$/i, "") || "converted") + ".sqlite";
+		downloadLink.disabled = false;
 
 		setStatus(
 			[
@@ -255,8 +255,8 @@ function clearDownload() {
 		downloadUrl = undefined;
 	}
 
-	downloadLink.href = "#";
-	downloadLink.setAttribute("aria-disabled", "true");
+	downloadFilename = undefined;
+	downloadLink.disabled = true;
 }
 
 function renderTables(rows) {
@@ -313,6 +313,14 @@ function closeCurrentDb() {
 		currentDb = undefined;
 	}
 }
+
+downloadLink.addEventListener("click", () => {
+	if (!downloadUrl || !downloadFilename) return;
+	const a = document.createElement("a");
+	a.href = downloadUrl;
+	a.download = downloadFilename;
+	a.click();
+});
 
 convertButton.addEventListener("click", () => {
 	void convertFile();
