@@ -75,8 +75,7 @@ async function convertFile() {
 		downloadUrl = URL.createObjectURL(
 			new Blob([sqliteBytes], { type: "application/vnd.sqlite3" }),
 		);
-		downloadFilename =
-			(file.name.replace(/\.cdb$/i, "") || "converted") + ".sqlite";
+		downloadFilename = `${file.name.replace(/\.cdb$/i, "") || "converted"}.sqlite`;
 		downloadLink.disabled = false;
 
 		setStatus(
