@@ -42,6 +42,8 @@ updates:
     commit-message:
       prefix: "chore(ci)"
     groups:
-      github-actions:
+      actions-minor-patch:
         applies-to: version-updates
-        update-types: ["minor", "patch"]
+        update-types:
+          - "minor"
+          - "patch"
