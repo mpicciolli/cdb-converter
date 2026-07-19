@@ -51,6 +51,7 @@ Examples:
   cdb-converter save.cdb save.sqlite
   cdb-converter save.cdb save.sqlite --normalize
   cdb-converter save.cdb save.sqlite --normalize --index-fk
+  cdb-converter -- --data.cdb
   cdb-converter save.sqlite save.cdb`;
 
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -58,7 +59,17 @@ export function parseArgs(argv: string[]): ParsedArgs {
 	let normalize = false;
 	let indexForeignKeys = false;
 
+	let optionsEnded = false;
+
 	for (const arg of argv) {
+		if (optionsEnded) {
+			positionals.push(arg);
+			continue;
+		}
+		if (arg === "--") {
+			optionsEnded = true;
+			continue;
+		}
 		if (arg === "-h" || arg === "--help") {
 			return { command: "help" };
 		}
