@@ -89,8 +89,12 @@ describe("sql to cdb conversion surface", () => {
 					return [{ columns: ["TableName", "ID"], values: [["DYN_team", 1]] }];
 				}
 
-						columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
-						values: [[0, "gene_sz_lastname", "TEXT 4098", 0, null, 0]],
+				if (sql.includes('PRAGMA table_info("DYN_team")')) {
+					return [
+						{
+							columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+							values: [[0, "gene_sz_lastname", "TEXT 4098", 0, null, 0]],
+						},
 					];
 				}
 
