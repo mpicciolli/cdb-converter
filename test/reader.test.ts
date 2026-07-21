@@ -152,18 +152,20 @@ describe("CDBReader", () => {
 
 	it("skips an unknown chunk type instead of throwing", () => {
 		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-		const reader = new CDBReader(createUnknownChunkBuffer(8));
+		try {
+			const reader = new CDBReader(createUnknownChunkBuffer(8));
 
-		const chunk = reader.readChunk();
+			const chunk = reader.readChunk();
 
-		expect(chunk.type).toBe(0x99);
-		expect(chunk.value).toBeInstanceOf(Uint8Array);
-		expect((chunk.value as Uint8Array).length).toBe(8);
-		expect(warnSpy).toHaveBeenCalledWith(
-			expect.stringContaining("Skipping unknown chunk type: 0x99"),
-		);
-
-		warnSpy.mockRestore();
+			expect(chunk.type).toBe(0x99);
+			expect(chunk.value).toBeInstanceOf(Uint8Array);
+			expect((chunk.value as Uint8Array).length).toBe(8);
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Skipping unknown chunk type: 0x99"),
+			);
+		} finally {
+			warnSpy.mockRestore();
+		}
 	});
 
 	it("throws when an unknown chunk declares an impossibly small size", () => {
