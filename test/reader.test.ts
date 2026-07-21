@@ -169,16 +169,18 @@ describe("CDBReader", () => {
 	});
 
 	it("throws when an unknown chunk declares an impossibly small size", () => {
-		const buffer = createUnknownChunkBuffer(0);
-		new DataView(buffer.buffer).setUint32(4, 4, true);
 		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-		const reader = new CDBReader(buffer);
+		try {
+			const buffer = createUnknownChunkBuffer(0);
+			new DataView(buffer.buffer).setUint32(4, 4, true);
+			const reader = new CDBReader(buffer);
 
-		expect(() => reader.readChunk()).toThrowError(
-			"Invalid chunk size for unknown chunk type 0x99 at position 0",
-		);
-
-		warnSpy.mockRestore();
+			expect(() => reader.readChunk()).toThrowError(
+				"Invalid chunk size for unknown chunk type 0x99 at position 0",
+			);
+		} finally {
+			warnSpy.mockRestore();
+		}
 	});
 
 	describe("FLOAT_LIST formatting", () => {
