@@ -152,7 +152,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			values.forEach((value, rowIdx) => {
 				if (value === null || value === undefined) {
 					throw new Error(
-						`NULL value in table "${tableInfo.name}", column "${columnName}", row ${rowIdx}. ` +
+						`NULL or missing value in table "${tableInfo.name}", column "${columnName}", row ${rowIdx + 1}. ` +
 							"The CDB format cannot represent NULL; supply a concrete value for every cell.",
 					);
 				}

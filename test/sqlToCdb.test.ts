@@ -82,6 +82,40 @@ describe("sql to cdb conversion surface", () => {
 		);
 	});
 
+	it("throws when a row contains a NULL value for a column", () => {
+		const mockDb = createMockSqlDatabase({
+			exec: (sql) => {
+				if (sql.includes("DB_STRUCTURE")) {
+					return [{ columns: ["TableName", "ID"], values: [["DYN_team", 1]] }];
+				}
+
+				if (sql.includes('PRAGMA table_info("DYN_team")')) {
+					return [
+						{
+							columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+							values: [[0, "gene_sz_lastname", "TEXT 1", 0, null, 0]],
+						},
+					];
+				}
+
+				if (sql.includes('SELECT * FROM "DYN_team"')) {
+					return [
+						{
+							columns: ["gene_sz_lastname"],
+							values: [["Doe"], [null]],
+						},
+					];
+				}
+
+				return [{ columns: [], values: [] }];
+			},
+		});
+
+		expect(() => sqlToCdb(mockDb)).toThrow(
+			/NULL or missing value in table "DYN_team", column "gene_sz_lastname", row 2/,
+		);
+	});
+
 	it("runs in an environment with ArrayBuffer support", () => {
 		expect(typeof ArrayBuffer).toBe("function");
 	});
