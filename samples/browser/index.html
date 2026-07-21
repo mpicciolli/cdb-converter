@@ -68,23 +68,20 @@
 								<div class="result__stat"><strong id="rcount" class="result__stat-value">0</strong> rows</div>
 								<div class="result__stat"><strong id="ssize" class="result__stat-value">0 B</strong> SQLite</div>
 							</div>
-							<a
+							<button
 								id="download"
-								href="#"
-								download="converted.sqlite"
-								role="button"
+								type="button"
 								class="outline result__download"
-								aria-disabled="true"
 							>
 								Download .sqlite
-							</a>
+							</button>
 						</div>
 						<div id="tables" class="tabs" data-state="empty">No tables detected</div>
 						<div id="preview-meta" class="preview-meta">
 							Convert a file, then pick a table to inspect its first rows.
 						</div>
 						<div class="table-wrap">
-							<table id="preview-table" class="table-wrap__table" role="grid">
+							<table id="preview-table" class="table-wrap__table">
 								<thead id="preview-head"></thead>
 								<tbody id="preview-body"></tbody>
 							</table>

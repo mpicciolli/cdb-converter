@@ -60,42 +60,43 @@ function snapshot(db: SqlDatabase): TableSnapshot[] {
 }
 
 describe("cdb <-> sql round-trip (no data loss)", () => {
-	it.each(
-		saveFixtures,
-	)("preserves all data and table flags for %s", (_label, fixturePath) => {
-		const original = readFileSync(fixturePath);
+	it.each(saveFixtures)(
+		"preserves all data and table flags for %s",
+		(_label, fixturePath) => {
+			const original = readFileSync(fixturePath);
 
-		// 1. cdb -> sql
-		const db1 = cdbToSql(original, SQL);
-		const before = snapshot(db1);
+			// 1. cdb -> sql
+			const db1 = cdbToSql(original, SQL);
+			const before = snapshot(db1);
 
-		// 2. Serialize to SQLite bytes and reopen — mirrors the CLI writing a .sqlite
-		//    file and reading it back, dropping any in-memory-only state.
-		const db2 = new SQL.Database(db1.export());
+			// 2. Serialize to SQLite bytes and reopen — mirrors the CLI writing a .sqlite
+			//    file and reading it back, dropping any in-memory-only state.
+			const db2 = new SQL.Database(db1.export()) as SqlDatabase;
 
-		// 3. sql -> cdb -> sql
-		const db3 = cdbToSql(sqlToCdb(db2), SQL);
-		const after = snapshot(db3);
+			// 3. sql -> cdb -> sql
+			const db3 = cdbToSql(sqlToCdb(db2), SQL);
+			const after = snapshot(db3);
 
-		try {
-			// Same tables, in the same order, with the same flags.
-			expect(after.map((t) => `${t.id}:${t.name}:${t.flags}`)).toEqual(
-				before.map((t) => `${t.id}:${t.name}:${t.flags}`),
-			);
-
-			// Same schema and the same row data, table by table.
-			for (let i = 0; i < before.length; i++) {
-				expect(after[i].columns, `columns of ${before[i].name}`).toEqual(
-					before[i].columns,
+			try {
+				// Same tables, in the same order, with the same flags.
+				expect(after.map((t) => `${t.id}:${t.name}:${t.flags}`)).toEqual(
+					before.map((t) => `${t.id}:${t.name}:${t.flags}`),
 				);
-				expect(after[i].rows, `rows of ${before[i].name}`).toEqual(
-					before[i].rows,
-				);
+
+				// Same schema and the same row data, table by table.
+				for (let i = 0; i < before.length; i++) {
+					expect(after[i].columns, `columns of ${before[i].name}`).toEqual(
+						before[i].columns,
+					);
+					expect(after[i].rows, `rows of ${before[i].name}`).toEqual(
+						before[i].rows,
+					);
+				}
+			} finally {
+				db1.close();
+				db2.close();
+				db3.close();
 			}
-		} finally {
-			db1.close();
-			db2.close();
-			db3.close();
-		}
-	});
+		},
+	);
 });

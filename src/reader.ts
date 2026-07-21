@@ -248,18 +248,33 @@ export class CDBReader {
 				break;
 
 			default:
-				throw new Error(
-					`Unknown chunk type: 0x${(header.chunkType as number).toString(16)}`,
-				);
+				{
+					if (typeof console !== "undefined") {
+						console.warn(
+							`Skipping unknown chunk type: 0x${(header.chunkType as number).toString(16)} at position ${chunkStartPos}`,
+						);
+					}
+					const skippedBytes = chunkEndPos - this.pos - 4;
+					if (skippedBytes < 0) {
+						throw new Error(
+							`Invalid chunk size for unknown chunk type 0x${(header.chunkType as number).toString(16)} at position ${chunkStartPos}`,
+						);
+					}
+					result = {
+						type: header.chunkType,
+						value: this.readBytes(skippedBytes),
+					};
+				}
+				break;
 		}
 
 		this.readPadding();
-		this.read32(); // CHUNK_END magic
+		this.readMagic(MAGIC.CHUNK_END, "CHUNK_END");
 		return result;
 	}
 
 	private readArray<T>(itemReader: () => T): T[] {
-		this.read32(); // ARRAY_BEGIN
+		this.readMagic(MAGIC.ARRAY_BEGIN, "ARRAY_BEGIN");
 		const count = this.read32();
 		const items: T[] = [];
 
@@ -267,7 +282,7 @@ export class CDBReader {
 			items.push(itemReader());
 		}
 
-		this.read32(); // ARRAY_END
+		this.readMagic(MAGIC.ARRAY_END, "ARRAY_END");
 		return items;
 	}
 
@@ -361,11 +376,12 @@ export class CDBReader {
 					rawData,
 					(view, offset, count) => {
 						const value = view.getFloat32(offset, true);
-						let formatted = value
-							.toFixed(6)
-							.replace(/(\.\d*?)0+$/, "$1")
-							.replace(/\.$/, "");
-						if (!formatted.includes(".") && count > 1) {
+						let formatted = this.formatFloat32(value);
+						if (
+							count > 1 &&
+							!formatted.includes(".") &&
+							!formatted.includes("e")
+						) {
 							formatted += ".0";
 						}
 						return formatted;
@@ -375,6 +391,16 @@ export class CDBReader {
 			default:
 				throw new Error(`Unknown data type: ${dataType}`);
 		}
+	}
+
+	private formatFloat32(value: number): string {
+		for (let precision = 1; precision <= 9; precision++) {
+			const candidate = Number(value.toPrecision(precision));
+			if (Math.fround(candidate) === value) {
+				return candidate.toString();
+			}
+		}
+		return value.toString();
 	}
 
 	private parseStrings(sizedData: Uint8Array, lengths: number[]): string[] {

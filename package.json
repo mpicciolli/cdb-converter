@@ -1,6 +1,6 @@
 {
 	"name": "cdb-converter",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Convert Pro Cycling Manager CDB files to/from SQLite and other formats. TypeScript library with zero configuration.",
 	"license": "MIT",
 	"author": "mpicciolli",
@@ -70,7 +70,7 @@
 	},
 	"dependencies": {
 		"better-sqlite3": "^12.11.1",
-		"pako": "^2.2.0"
+		"pako": "^3.0.1"
 	},
 	"peerDependencies": {
 		"sql.js": "^1.14.1"
@@ -81,14 +81,14 @@
 		}
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.13",
+		"@biomejs/biome": "2.5.4",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/node": "^22.20.0",
 		"@types/pako": "^2.0.4",
 		"@types/sql.js": "^1.4.11",
 		"@vitest/coverage-v8": "^4.1.5",
 		"husky": "^9.1.7",
-		"lint-staged": "^15.5.2",
+		"lint-staged": "^17.0.8",
 		"sql.js": "^1.14.1",
 		"tsup": "^8.5.1",
 		"typescript": "^5.9.3",

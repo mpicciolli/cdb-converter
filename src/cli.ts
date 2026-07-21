@@ -51,6 +51,7 @@ Examples:
   cdb-converter save.cdb save.sqlite
   cdb-converter save.cdb save.sqlite --normalize
   cdb-converter save.cdb save.sqlite --normalize --index-fk
+  cdb-converter -- --data.cdb  (use -- to treat a leading-dash path as a positional argument)
   cdb-converter save.sqlite save.cdb`;
 
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -58,7 +59,17 @@ export function parseArgs(argv: string[]): ParsedArgs {
 	let normalize = false;
 	let indexForeignKeys = false;
 
+	let optionsEnded = false;
+
 	for (const arg of argv) {
+		if (optionsEnded) {
+			positionals.push(arg);
+			continue;
+		}
+		if (arg === "--") {
+			optionsEnded = true;
+			continue;
+		}
 		if (arg === "-h" || arg === "--help") {
 			return { command: "help" };
 		}
@@ -74,6 +85,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
 			normalize = true;
 			indexForeignKeys = true;
 			continue;
+		}
+		if (arg.startsWith("-") && arg !== "-") {
+			throw new Error(
+				`Unknown option "${arg}". Run "cdb-converter --help" for usage.`,
+			);
 		}
 		positionals.push(arg);
 	}
@@ -188,7 +204,14 @@ async function convert(
 }
 
 export async function run(argv: string[]): Promise<void> {
-	const parsed = parseArgs(argv);
+	let parsed: ParsedArgs;
+	try {
+		parsed = parseArgs(argv);
+	} catch (error) {
+		console.error(`Error: ${error instanceof Error ? error.message : error}`);
+		process.exitCode = 1;
+		return;
+	}
 
 	if (parsed.command === "help") {
 		console.log(HELP_TEXT);
