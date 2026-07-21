@@ -157,7 +157,23 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			writer.write32(info.cdbDataType);
 			writer.writeChunkClose();
 
-			writer.writeColumnData(info.cdbDataType, columnData[colIdx]);
+			const values = columnData[colIdx];
+			if (values.length !== rows.length) {
+				throw new Error(
+					`Missing value(s) in table "${tableInfo.name}", column "${columnName}": expected ${rows.length} rows, got ${values.length}. ` +
+						"Ensure every row has a concrete value for every column (the CDB format cannot represent NULL).",
+				);
+			}
+			for (let rowIdx = 0; rowIdx < values.length; rowIdx++) {
+				const value = values[rowIdx];
+				if (value === null || value === undefined) {
+					throw new Error(
+						`NULL or missing value in table "${tableInfo.name}", column "${columnName}", row ${rowIdx + 1}. ` +
+							"The CDB format cannot represent NULL; supply a concrete value for every cell.",
+					);
+				}
+			}
+			writer.writeColumnData(info.cdbDataType, values);
 
 			writer.writeChunkClose();
 		});
