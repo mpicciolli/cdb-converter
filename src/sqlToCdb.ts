@@ -3,6 +3,7 @@
  */
 
 import { compressCdb } from "./compression";
+import { escapeSqlIdentifier } from "./sqlUtils";
 import { CDBWriter } from "./writer";
 import {
 	CHUNK_TYPE,
@@ -75,8 +76,15 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 		flags: hasFlagsColumn ? (row[2] as number | null) : null,
 	}));
 
-	const estimatedSize = db.export().length;
-	const writer = new CDBWriter(estimatedSize);
+	const pageCountResult = db.exec(`PRAGMA page_count`);
+	const pageSizeResult = db.exec(`PRAGMA page_size`);
+	const pageCount = Number(pageCountResult[0]?.values[0]?.[0]);
+	const pageSize = Number(pageSizeResult[0]?.values[0]?.[0]);
+	const estimatedSize = pageCount * pageSize;
+	const writer =
+		Number.isFinite(estimatedSize) && estimatedSize > 0
+			? new CDBWriter(estimatedSize)
+			: new CDBWriter();
 
 	writer.writeChunkOpen(CHUNK_TYPE.WRAPPER, "cyanide database");
 	writer.writeChunkOpen(CHUNK_TYPE.DATABASE_FLAGS);
@@ -88,7 +96,8 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 	writer.write32(tables.length);
 
 	tables.forEach((tableInfo) => {
-		const schemaResult = db.exec(`PRAGMA table_info("${tableInfo.name}")`);
+		const escapedTableName = escapeSqlIdentifier(tableInfo.name);
+		const schemaResult = db.exec(`PRAGMA table_info("${escapedTableName}")`);
 		if (schemaResult.length === 0 || schemaResult[0].values.length === 0) {
 			throw new Error(
 				`No schema information available for table "${tableInfo.name}"`,
@@ -104,7 +113,7 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			columnInfo[colName] = parseColumnMetadata(colName, colType);
 		});
 
-		const dataResult = db.exec(`SELECT * FROM "${tableInfo.name}"`);
+		const dataResult = db.exec(`SELECT * FROM "${escapedTableName}"`);
 		const rows = dataResult.length > 0 ? dataResult[0].values : [];
 
 		writer.writeChunkOpen(CHUNK_TYPE.TABLE, tableInfo.name);
@@ -148,7 +157,23 @@ export function sqlToCdb(db: SqlDatabase): ArrayBuffer {
 			writer.write32(info.cdbDataType);
 			writer.writeChunkClose();
 
-			writer.writeColumnData(info.cdbDataType, columnData[colIdx]);
+			const values = columnData[colIdx];
+			if (values.length !== rows.length) {
+				throw new Error(
+					`Missing value(s) in table "${tableInfo.name}", column "${columnName}": expected ${rows.length} rows, got ${values.length}. ` +
+						"Ensure every row has a concrete value for every column (the CDB format cannot represent NULL).",
+				);
+			}
+			for (let rowIdx = 0; rowIdx < values.length; rowIdx++) {
+				const value = values[rowIdx];
+				if (value === null || value === undefined) {
+					throw new Error(
+						`NULL or missing value in table "${tableInfo.name}", column "${columnName}", row ${rowIdx + 1}. ` +
+							"The CDB format cannot represent NULL; supply a concrete value for every cell.",
+					);
+				}
+			}
+			writer.writeColumnData(info.cdbDataType, values);
 
 			writer.writeChunkClose();
 		});

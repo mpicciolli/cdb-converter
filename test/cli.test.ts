@@ -69,6 +69,39 @@ describe("parseArgs", () => {
 			indexForeignKeys: false,
 		});
 	});
+
+	it("rejects unknown options instead of treating them as positionals", () => {
+		expect(() => parseArgs(["save.cdb", "--normalise"])).toThrow(
+			/Unknown option "--normalise"/,
+		);
+		expect(() => parseArgs(["-x", "save.cdb"])).toThrow(/Unknown option "-x"/);
+	});
+
+	it("treats -- as the end-of-options marker", () => {
+		expect(parseArgs(["--", "--data.cdb"])).toEqual({
+			command: "convert",
+			input: "--data.cdb",
+			output: undefined,
+			normalize: false,
+			indexForeignKeys: false,
+		});
+		expect(parseArgs(["--", "--data.cdb", "-out.sqlite"])).toEqual({
+			command: "convert",
+			input: "--data.cdb",
+			output: "-out.sqlite",
+			normalize: false,
+			indexForeignKeys: false,
+		});
+		expect(
+			parseArgs(["save.cdb", "out.sqlite", "--normalize", "--", "-x"]),
+		).toEqual({
+			command: "convert",
+			input: "save.cdb",
+			output: "out.sqlite",
+			normalize: true,
+			indexForeignKeys: false,
+		});
+	});
 });
 
 describe("detectDirection", () => {
