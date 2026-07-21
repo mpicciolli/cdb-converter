@@ -168,8 +168,6 @@ describe("CDBReader", () => {
 
 	it("throws when an unknown chunk declares an impossibly small size", () => {
 		const buffer = createUnknownChunkBuffer(0);
-		// Shrink the declared chunkSize below what's already been consumed
-		// by the header/separator, forcing a negative skip length.
 		new DataView(buffer.buffer).setUint32(4, 4, true);
 		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const reader = new CDBReader(buffer);
