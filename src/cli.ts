@@ -51,7 +51,7 @@ Examples:
   cdb-converter save.cdb save.sqlite
   cdb-converter save.cdb save.sqlite --normalize
   cdb-converter save.cdb save.sqlite --normalize --index-fk
-  cdb-converter -- --data.cdb
+  cdb-converter -- --data.cdb  (use -- to treat a leading-dash path as a positional argument)
   cdb-converter save.sqlite save.cdb`;
 
 export function parseArgs(argv: string[]): ParsedArgs {
