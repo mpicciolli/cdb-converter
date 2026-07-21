@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CDBReader } from "../src/reader";
 import { CHUNK_TYPE, DATA_TYPE, MAGIC } from "../src/tableMetadata";
 import { CDBWriter } from "../src/writer";
@@ -57,6 +57,22 @@ function createWrapperWithMissingColumnDescription(): Uint8Array {
 	writer.writeChunkClose();
 
 	return writer.getData();
+}
+
+function createUnknownChunkBuffer(payloadLength: number): Uint8Array {
+	const chunkSize = 28 + payloadLength;
+	const buffer = new ArrayBuffer(chunkSize);
+	const view = new DataView(buffer);
+
+	view.setUint32(0, MAGIC.CHUNK_BEGIN, true);
+	view.setUint32(4, chunkSize, true);
+	view.setUint32(8, 0x99, true); // unknown chunk type
+	view.setUint32(12, 0, true);
+	view.setUint32(16, 0, true);
+	view.setUint32(20, MAGIC.CHUNK_SEPARATOR, true);
+	view.setUint32(24 + payloadLength, MAGIC.CHUNK_END, true);
+
+	return new Uint8Array(buffer);
 }
 
 function createFloatListTable(rows: string[]): Uint8Array {
@@ -132,6 +148,39 @@ describe("CDBReader", () => {
 		expect(() => reader.readChunk()).toThrowError(
 			"Invalid column chunk: missing column description",
 		);
+	});
+
+	it("skips an unknown chunk type instead of throwing", () => {
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		try {
+			const reader = new CDBReader(createUnknownChunkBuffer(8));
+
+			const chunk = reader.readChunk();
+
+			expect(chunk.type).toBe(0x99);
+			expect(chunk.value).toBeInstanceOf(Uint8Array);
+			expect((chunk.value as Uint8Array).length).toBe(8);
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Skipping unknown chunk type: 0x99"),
+			);
+		} finally {
+			warnSpy.mockRestore();
+		}
+	});
+
+	it("throws when an unknown chunk declares an impossibly small size", () => {
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		try {
+			const buffer = createUnknownChunkBuffer(0);
+			new DataView(buffer.buffer).setUint32(4, 4, true);
+			const reader = new CDBReader(buffer);
+
+			expect(() => reader.readChunk()).toThrowError(
+				"Invalid chunk size for unknown chunk type 0x99 at position 0",
+			);
+		} finally {
+			warnSpy.mockRestore();
+		}
 	});
 
 	describe("FLOAT_LIST formatting", () => {

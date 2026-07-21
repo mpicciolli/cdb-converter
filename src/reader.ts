@@ -248,9 +248,24 @@ export class CDBReader {
 				break;
 
 			default:
-				throw new Error(
-					`Unknown chunk type: 0x${(header.chunkType as number).toString(16)}`,
-				);
+				{
+					if (typeof console !== "undefined") {
+						console.warn(
+							`Skipping unknown chunk type: 0x${(header.chunkType as number).toString(16)} at position ${chunkStartPos}`,
+						);
+					}
+					const skippedBytes = chunkEndPos - this.pos - 4;
+					if (skippedBytes < 0) {
+						throw new Error(
+							`Invalid chunk size for unknown chunk type 0x${(header.chunkType as number).toString(16)} at position ${chunkStartPos}`,
+						);
+					}
+					result = {
+						type: header.chunkType,
+						value: this.readBytes(skippedBytes),
+					};
+				}
+				break;
 		}
 
 		this.readPadding();
