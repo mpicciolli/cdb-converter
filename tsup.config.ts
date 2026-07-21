@@ -24,12 +24,31 @@ export default defineConfig([
 	},
 	{
 		entry: {
+			"engines/better-sqlite3": "src/engines/better-sqlite3.ts",
+			"engines/sql-js": "src/engines/sql-js.ts",
+		},
+		format: ["esm", "cjs"],
+		dts: true,
+		shims: true,
+		clean: false,
+		external: ["better-sqlite3", "sql.js"],
+		outExtension({ format }) {
+			return {
+				js: format === "esm" ? ".mjs" : ".cjs",
+			};
+		},
+		sourcemap: false,
+		minify: false,
+	},
+	{
+		entry: {
 			cli: "src/cli.ts",
 		},
 		format: ["esm"],
 		dts: false,
 		shims: true,
 		clean: false,
+		external: ["better-sqlite3"],
 		define: {
 			CDB_CONVERTER_VERSION: JSON.stringify(version),
 		},

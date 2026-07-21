@@ -56,4 +56,3 @@ This package converts Pro Cycling Manager CDB binary database files to and from 
 ## References
 
 - API usage and examples: [README.md](README.md)
-- Build/export behavior note: [build-notes.md](memories/repo/build-notes.md)

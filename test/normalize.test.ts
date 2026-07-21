@@ -1,15 +1,14 @@
 import { readFileSync } from "node:fs";
-import initSqlJs from "sql.js";
 import { beforeAll, describe, expect, it } from "vitest";
+import { betterSqlite3Engine } from "../src/engines/better-sqlite3";
 import { cdbToSql, sqlToCdb } from "../src/index";
-import type { SqlDatabase, SqlJsStatic } from "../src/types";
+import type { SqlDatabase, SqlEngine } from "../src/types";
 import { fixturePath } from "./fixtures/save.fixture";
 
-let SQL: SqlJsStatic;
+const SQL: SqlEngine = betterSqlite3Engine;
 let bytes: Buffer;
 
-beforeAll(async () => {
-	SQL = await initSqlJs();
+beforeAll(() => {
 	bytes = readFileSync(fixturePath(2025));
 });
 

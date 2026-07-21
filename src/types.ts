@@ -1,7 +1,3 @@
-import type { Database } from "sql.js";
-
-export type { SqlJsStatic } from "sql.js";
-
 export enum DataType {
 	INTEGER = 0,
 	FLOAT = 1,
@@ -69,7 +65,23 @@ export interface CDBChunk {
 
 export type ColumnData = Array<string | number | boolean>;
 
-export interface SqlDatabase extends Database {}
+export type SqlValue = string | number | Uint8Array | null;
+
+export interface SqlExecResult {
+	columns: string[];
+	values: SqlValue[][];
+}
+
+export interface SqlDatabase {
+	run(sql: string, params?: SqlValue[]): void;
+	exec(sql: string): SqlExecResult[];
+	export(): Uint8Array;
+	close(): void;
+}
+
+export interface SqlEngine {
+	Database: new (data?: Uint8Array | number[] | undefined) => SqlDatabase;
+}
 
 export interface ColumnMetadata {
 	sqliteType: string;

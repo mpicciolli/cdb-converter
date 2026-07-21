@@ -1,8 +1,7 @@
-import type { BindParams, QueryExecResult } from "sql.js";
 import { describe, expect, it, vi } from "vitest";
 import { cdbToSql } from "../src/index";
-import type { SqlJsStatic } from "../src/types";
-import { MockSqlDatabaseBase, MockStatement } from "./mocks/mockSqlDatabase";
+import type { SqlEngine, SqlExecResult, SqlValue } from "../src/types";
+import { MockSqlDatabaseBase } from "./mocks/mockSqlDatabase";
 
 vi.mock("../src/compression", () => ({
 	decompressCdb: vi.fn((data: ArrayBuffer | Uint8Array) => data),
@@ -20,7 +19,7 @@ vi.mock("../src/reader", () => ({
 
 type MockSqlDatabase = MockDatabase;
 
-function createMockSqlJs(): SqlJsStatic & {
+function createMockSqlJs(): SqlEngine & {
 	createdDatabases: MockSqlDatabase[];
 } {
 	const createdDatabases: MockSqlDatabase[] = [];
@@ -34,16 +33,15 @@ function createMockSqlJs(): SqlJsStatic & {
 
 	return {
 		Database: MockDatabaseImpl,
-		Statement: MockStatement,
 		createdDatabases,
 	};
 }
 
 class MockDatabase extends MockSqlDatabaseBase {
 	tables: Map<string, { rows: unknown[][] }> = new Map();
-	sqlOperations: Array<{ sql: string; params?: BindParams }> = [];
+	sqlOperations: Array<{ sql: string; params?: SqlValue[] }> = [];
 
-	override run(sql: string, params?: BindParams): this {
+	override run(sql: string, params?: SqlValue[]): void {
 		this.sqlOperations.push({ sql, params });
 
 		if (sql.includes("CREATE TABLE")) {
@@ -60,11 +58,9 @@ class MockDatabase extends MockSqlDatabaseBase {
 				}
 			}
 		}
-
-		return this;
 	}
 
-	override exec(sql: string): QueryExecResult[] {
+	override exec(sql: string): SqlExecResult[] {
 		if (sql.includes("SELECT TableName, ID FROM DB_STRUCTURE")) {
 			return [
 				{
