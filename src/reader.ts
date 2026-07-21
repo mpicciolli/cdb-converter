@@ -361,11 +361,12 @@ export class CDBReader {
 					rawData,
 					(view, offset, count) => {
 						const value = view.getFloat32(offset, true);
-						let formatted = value
-							.toFixed(6)
-							.replace(/(\.\d*?)0+$/, "$1")
-							.replace(/\.$/, "");
-						if (!formatted.includes(".") && count > 1) {
+						let formatted = this.formatFloat32(value);
+						if (
+							count > 1 &&
+							!formatted.includes(".") &&
+							!formatted.includes("e")
+						) {
 							formatted += ".0";
 						}
 						return formatted;
@@ -375,6 +376,16 @@ export class CDBReader {
 			default:
 				throw new Error(`Unknown data type: ${dataType}`);
 		}
+	}
+
+	private formatFloat32(value: number): string {
+		for (let precision = 1; precision <= 9; precision++) {
+			const candidate = Number(value.toPrecision(precision));
+			if (Math.fround(candidate) === value) {
+				return candidate.toString();
+			}
+		}
+		return value.toString();
 	}
 
 	private parseStrings(sizedData: Uint8Array, lengths: number[]): string[] {
